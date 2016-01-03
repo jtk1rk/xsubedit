@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=xSubEdit
+Comment=X Subtitle Editor
+Exec=/usr/bin/xsubedit
+Icon=xSubEdit
+Terminal=false
+Type=Application
+Categories=Editors,Subtitles;
+

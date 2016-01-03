@@ -1,0 +1,144 @@
+import gi
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gdk
+from os.path import exists, relpath, split,  abspath
+import pickle
+import platform
+import time
+import itertools
+
+RUN_TIMESTAMP = time.time()
+UTF8_BOM = '\xef\xbb\xbf'
+DIR_DELIMITER = '/' if platform.system() == 'Linux' else '\\'
+
+class brList(list):
+    def append(self, index, item):
+        if index < len(self):
+            self[:] = self[:index]
+        super(brList, self).append(item)
+
+class cPreferences:
+    def __init__(self,  filename):
+        self.filename = filename.decode('utf-8')
+        self.data =  {'Encoding': 'Windows-1253', 'Incremental_Backups': True, 'Autosave': True}
+
+    def load(self):
+        if exists(self.filename):
+            self.data = pickle.load( open(self.filename,  'rb') )
+
+    def save(self):
+        pickle.dump( self.data,  open(self.filename,  'wb') )
+
+    def keys(self):
+        return self.data.keys()
+
+    def get_data(self):
+        return self.data.copy()
+    
+    def set_data(self,  prefs):
+        self.data = prefs.copy()
+
+    def update_mru(self, value):
+        if not 'MRU' in self.data.keys():
+            self.data['MRU'] = [value]
+        else:
+            tmpValue = None
+            for item in self.data['MRU']:
+                if split(item)[1] == split(value)[1]:
+                    tmpValue = item
+                    break
+            if tmpValue:
+                self.data['MRU'].remove(tmpValue)
+            self.data['MRU'] = [value] + self.data['MRU']
+        tmplist = []
+        self.data['MRU'] = [ item.decode('utf-8') for idx, item in enumerate(self.data['MRU']) if exists(item.decode('utf-8')) and (idx<10) ]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __getitem__(self,  key):
+        return self.data[key]
+
+def RGB_to_hex(rgb):
+    return Gdk.Color(rgb[0]*65535, rgb[1]*65535, rgb[2]*65535).to_string()
+
+def calc_info_color(value):
+    """ Calculate subtitle score color
+        Compatible with VSS """
+    if value == 'Inf':
+        return ('TOO FAST!', RGB_to_hex((1,  0.6, 0.6)))
+    if float(value) >= 35:
+        return ('TOO FAST!', RGB_to_hex((1,  0.6, 0.6)))
+    elif 31 <= float(value) < 35:
+        return ('Fast, Acceptable.', RGB_to_hex((1, 0.8, 0.6)))
+    elif 27 <= float(value) < 31:
+        return ('A bit fast.', RGB_to_hex((1, 1, 0.6)))
+    elif 23 <= float(value) < 27:
+        return ('Good.', RGB_to_hex((0.8, 1, 0.6)))
+    elif 15 <= float(value) < 23:
+        return ('Perfect.', RGB_to_hex((0.6, 1, 0.6)))
+    elif 13 <= float(value) < 15:
+        return ('Good.', RGB_to_hex((0.6, 1, 0.8)))
+    elif 10 <= float(value) < 13:
+        return ('A bit slow.', RGB_to_hex((0.6,  1,  1)))
+    elif 5 <= float(value) < 10:
+        return ('Slow, Acceptable.', RGB_to_hex((0.6, 0.8, 1)))
+    elif float(value) < 5:
+        return ('TOO SLOW!', RGB_to_hex((0.6, 0.6, 1)))
+
+def set_process_name():
+    import random
+    import string
+    from ctpyes import cdll, create_string_buffer, byref
+    """ This works only in Linux.
+        I would avoid using it because it depends on an external library (libc.so.6),
+        but I do not know any other way (without external depedencies) to change
+        the name of the process. """
+    if platform.system() != 'Linux':
+        return
+    rndext = ''.join(random.choice(string.ascii_lowercase) for i in xrange(5))
+    name = 'xSubEdit-' + rndext
+    libc = cdll.LoadLibrary('/lib/libc.so.6')
+    buff = create_string_buffer(len(name) + 1)
+    buff.value = name
+    libc.prctl(15, byref(buff), 0, 0, 0)
+
+def get_rel_path(refpath, filename):
+    tmpstr = ''
+    if platform.system() == 'Windows' and filename[1] != ':':
+        tmpstr = abspath(filename)
+        tmpstr = tmpstr[:2]
+    return relpath(split(tmpstr+filename)[0], tmpstr+refpath)+ DIR_DELIMITER + split(tmpstr+filename)[1]
+
+def pairwise(iterable):
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
+
+def triplewise(iterable):
+    a, b, c = itertools.tee(iterable, 3)
+    next(b, None)
+    next(c, None)
+    next(c, None)
+    return itertools.izip(a, b, c)
+
+def isfloat(item):
+    try:
+        float(item)
+        return True
+    except ValueError:
+        return False
+
+def find_all_str(s, substring):
+    """Finds all occurences of a substring in a string
+       and returns the result as a list of tuples (begin, end)"""
+    res = []
+    pos = s.find(substring)
+    while pos >= 0:
+       res.append((pos, pos + len(substring)))
+       pos = s.find(substring, res[-1][1])
+    return res
+
+def do_all(f, iterable):
+    for item in iterable:
+        f(item)
