@@ -17,3 +17,9 @@ many video codecs as possible)
 There are also some external depedencies:
 
 ffmpeg and mediainfo
+
+
+Notes
+-----
+
+The source need some serious cleanup, which will happen when I have spare time.
