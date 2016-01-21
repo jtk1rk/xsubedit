@@ -9,7 +9,7 @@ class cDurationChangeDialog(Gtk.Window):
     def __init__(self, parent, subtitleModel, treeview, changeList):
         super(cDurationChangeDialog, self).__init__()
         self.parent = parent
-        self.set_title('Duration Manipulation Dialog')
+        self.set_title('Duration Edit Dialog')
         self.set_modal(True)
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)

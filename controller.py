@@ -63,7 +63,7 @@ class Controller:
         elif exists('/usr/local/share/xsubedit/thesaurus.pz'):
             path = '/usr/local/share/xsubedit/thesaurus.pz'
         else:
-            raise('Cannot find thesaurus.pz')
+            raise IOError('Cannot find thesaurus.pz')
 
         view['subtitles'].thesaurus = cThesaurus(path)
 

@@ -9,7 +9,7 @@ class cTimeChangeDialog(Gtk.Window):
     def __init__(self, parent, subtitleModel, treeview, changeList):
         super(cTimeChangeDialog, self).__init__()
         self.parent = parent
-        self.set_title('Time Sync Dialog')
+        self.set_title('Time Edit Dialog')
         self.set_modal(True)
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
