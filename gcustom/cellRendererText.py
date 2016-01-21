@@ -17,7 +17,7 @@ class cCellRendererText(Gtk.CellRendererText):
             return
         sub = treeview.get_model()[path][0]
         entry = Gtk.Entry()
-        dialog = cTextEditDialog(self.parentWindow, sub, 'vo')
+        dialog = cTextEditDialog(self.parentWindow, sub, 'vo', treeview.thesaurus)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             entry.set_text(dialog.text)

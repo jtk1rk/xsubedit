@@ -13,7 +13,8 @@ class cAudioWidget(Gtk.EventBox):
                               'dragged-sub': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)), 
                               'vertical-scale-update': (GObject.SIGNAL_RUN_LAST, None, (float,)), 
                               'active-sub-changed' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
-                              'tmpSub-update': (GObject.SIGNAL_RUN_LAST, None, ())
+                              'tmpSub-update': (GObject.SIGNAL_RUN_LAST, None, ()), 
+                              'handle-double-click' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, int))
                               }
 
     def __init__(self):
@@ -61,7 +62,6 @@ class cAudioWidget(Gtk.EventBox):
 
         # Init Class Variables
         self.scale_linear_audio = 1
-        #self.scale_logarithmic_audio = 1
         self.waveformBuffer = None
         self.canvasBuffer = None
         self.carret_position = 0
@@ -119,6 +119,7 @@ class cAudioWidget(Gtk.EventBox):
                 duration_diff = self.overSub.calc_target_duration() - int(self.overSub.duration)
                 nextSub = self.subtitlesModel.get_next(self.overSub)
                 next_ms = int(nextSub.startTime if nextSub != None else self.videoDuration)
+                old_st = int(self.overSub.stopTime)
                 if duration_diff < 0:
                     self.overSub.stopTime = int(self.overSub.stopTime) + duration_diff
                 else:
@@ -126,6 +127,7 @@ class cAudioWidget(Gtk.EventBox):
                 self.isCanvasBufferValid = False
                 self.queue_draw()
                 self.emit('sub-updated', self.overSub)
+                self.emit('handle-double-click', self.overSub, old_st)
 
         if self.mouse_click_type == self.DOUBLE_CLICK and self.overHandle == None and self.overSub != None and self.overSub != self.tmpSub:
             self.activeSub = self.overSub
@@ -135,8 +137,6 @@ class cAudioWidget(Gtk.EventBox):
         if self.mouse_button == self.BUTTON_LEFT:
             self.tmpSub = None
             self.activeSub = None
-            #if self.overSub == None or self.overSub == self.tmpSub:
-            #    self.activeSub = None
             self.cursor = self.get_mouse_msec(self.mouse_click_coords[0])
             self.isCanvasBufferValid = False
             self.queue_draw()
@@ -277,17 +277,6 @@ class cAudioWidget(Gtk.EventBox):
             elif event.direction == Gdk.ScrollDirection.DOWN:
                 self.scale_linear_audio -= 0.2
             return
-
-        #if event.state & Gdk.ModifierType.MOD1_MASK:
-        #    if event.direction == Gdk.ScrollDirection.UP:
-        #        self.scale_logarithmic_audio += 0.2
-        #    elif event.direction == Gdk.ScrollDirection.DOWN:
-        #        self.scale_logarithmic_audio -= 0.2
-        #    self.scale_logarithmic_audio = self.scale_logarithmic_audio if self.scale_logarithmic_audio > 1 else 1
-        #    self.audioModel.set_scale('logarithmic', self.scale_logarithmic_audio)
-        #    self.isWaveformBufferValid = False
-        #    self.queue_draw()
-        #    return
 
         na = self.viewportLower * 100
         nb = self.viewportUpper * 100
@@ -543,13 +532,6 @@ class cAudioWidget(Gtk.EventBox):
         self.isCanvasBufferValid = False
         self.queue_draw()
         self.emit('viewpos-update', int(100 * low / float(self.videoDuration)))
-        #subWidthPerc = (self.activeSub.stopTime - self.activeSub.startTime) / float(self.videoDuration)
-        #lowPerc = self.activeSub.startTime / float(self.videoDuration) - subWidthPerc * 0.8
-        #highPerc = self.activeSub.stopTime / float(self.videoDuration) + subWidthPerc * 0.8
-        #self.viewportLower = lowPerc if lowPerc >= 0 else 0
-        #self.viewportUpper = highPerc if highPerc <= 1 else 1
-        #self.queue_draw()
-        #self.emit('viewpos-update', int(lowPerc * 100))
 
     def center_multiple_active_subs(self, startTime, stopTime):
         self.videoSegment = (int(startTime), int(stopTime))
@@ -626,6 +608,12 @@ class cAudioWidget(Gtk.EventBox):
             cc.stroke()
 
             # Draw Subtitle Text
+            fontSize = 10
+            if self.viewportLower != self.viewportUpper:
+                zoom = 1 / float(self.viewportUpper - self.viewportLower)
+                fontSize = fontSize if not 10 <= zoom <= 15 else zoom + 1
+                fontSize = 16 if zoom > 15 else fontSize
+            cc.set_font_size(fontSize)
             cc.set_source_rgba(0.8, 0.8, 0, 1)
             tmpText = sub.text.splitlines()
             if tmpText != []:

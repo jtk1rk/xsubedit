@@ -50,7 +50,6 @@ class cPreferences:
             if tmpValue:
                 self.data['MRU'].remove(tmpValue)
             self.data['MRU'] = [value] + self.data['MRU']
-        tmplist = []
         self.data['MRU'] = [ item.decode('utf-8') for idx, item in enumerate(self.data['MRU']) if exists(item.decode('utf-8')) and (idx<10) ]
 
     def __setitem__(self, key, value):
@@ -58,6 +57,9 @@ class cPreferences:
 
     def __getitem__(self,  key):
         return self.data[key]
+
+    def __contains__(self, key):
+        return key in self.data
 
 def RGB_to_hex(rgb):
     return Gdk.Color(rgb[0]*65535, rgb[1]*65535, rgb[2]*65535).to_string()
@@ -142,3 +144,8 @@ def find_all_str(s, substring):
 def do_all(f, iterable):
     for item in iterable:
         f(item)
+
+def grad(A0, B0, A, B, x):
+    if A0 == B0:
+        raise ValueError('ValueError: Division By Zero')
+    return ( (A - B) / float(A0 - B0) ) * (x - B0) + B

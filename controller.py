@@ -16,6 +16,10 @@ from gcustom.recodeDialog import cRecodeDialog
 from gcustom.openMenu import cOpenMenu
 from gcustom.textEditDialog import cTextEditDialog
 from gcustom.searchReplaceDialog import cSearchReplaceDialog
+from gcustom.durationChangeDialog import cDurationChangeDialog
+from gcustom.timeChangeDialog import cTimeChangeDialog
+from gcustom.syncDialog import cSyncDialog
+from thesaurus import cThesaurus
 
 from subfile import srtFile
 from os.path import splitext, exists, split, normpath, join
@@ -50,7 +54,10 @@ class Controller:
             if e.errno != errno.EEXIST:
                 raise
 
+        view['subtitles'].thesaurus = cThesaurus('thesaurus.pz')
+
         self.preferences = cPreferences(appdirs.user_config_dir('xSubEdit', 'jtapps') + DIR_DELIMITER + 'xSubEdit.conf')
+
         self.cursorLeftMargin = Gdk.Cursor(Gdk.CursorType.LEFT_SIDE)
         self.cursorRightMargin = Gdk.Cursor(Gdk.CursorType.RIGHT_SIDE)
         self.view['scale'].set_can_focus(False)
@@ -63,6 +70,7 @@ class Controller:
         view['audio'].connect('sub-updated', self.on_audio_sub_updated)
         view['audio'].connect('scroll-event', self.on_audio_mousewheel)
         view['audio'].connect('dragged-sub', self.on_audio_dragged_sub)
+        view['audio'].connect('handle-double-click', self.on_audio_handle_double_click)
         view['audio'].connect('vertical-scale-update', self.on_vertical_scale_update)
         view['audio'].connect('tmpSub-update', self.on_audio_tmpSub_update)
         self.active_sub_changed_id = view['audio'].connect('active-sub-changed', self.on_audio_active_sub_changed)
@@ -76,6 +84,9 @@ class Controller:
         view['TVCM-Delete'].connect('activate', self.on_TVCM_Delete)
         view['TVCM-Merge'].connect('activate', self.on_TVCM_Merge)
         view['TVCM-Merge-To-Dialog'].connect('activate', self.on_TVCM_Merge)
+        view['TVCM-DurationEdit'].connect('activate', self.on_TVCM_DurationEdit)
+        view['TVCM-SyncDialog'].connect('activate', self.on_TVCM_SyncDialog)
+        view['TVCM-TimeEditDialog'].connect('activate', self.on_TVCM_TimeEditDialog)
         view['openFileTB'].connect('clicked', self.on_open_button_clicked)
         view['openFileTB'].connect('button-release-event', self.on_open_button_release)
         view['newFileTB'].connect('clicked', self.on_new_button_clicked)
@@ -151,13 +162,11 @@ class Controller:
         view['subtitles'].get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
         view['subtitles'].set_property('rubber-banding', True)
         view['subtitles'].set_search_column(-1)
-        #view['subtitles'].set_enable_search(False)
 
         editSubCell.connect('edited', self.on_sub_edit)
         editTimeCell1.connect('edited', self.on_time_edit, 1)
         editTimeCell2.connect('edited', self.on_time_edit, 2)
 
-        #view['statusbar'].output('Welcome to xSubEdit')
         view['audio'].subtitlesModel = self.model.subtitles
 
         # Show Main Window
@@ -166,10 +175,47 @@ class Controller:
         view['projectSettingsTB'].set_property('sensitive', False)
 
         # Final initializations
-        #model.video.set_video_widget(view['video'])
         self.preferences.load()
+        if 'Zoom' in self.preferences:
+            view['audio'].viewportUpper = 1 / float(self.preferences['Zoom'])
         self.autosaveHandle = None
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
+        if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
+            self.view.subtitlesViewSize = self.preferences['subViewSize']
+            self.view.audioViewSize = self.preferences['audioViewSize']
+            self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
+            self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+        self.init_done = True
+
+    def on_audio_handle_double_click(self, sender, sub, old_st):
+        self.history.add(('edit-stopTime', sub, old_st, int(sub.stopTime)))
+
+    def on_TVCM_TimeEditDialog(self, widget):
+        if self.model.subtitles.is_empty():
+            return
+        changeList = []
+        cTimeChangeDialog(self.view, self.model.subtitles, self.view['subtitles'], changeList)
+        self.history.add(('menu-change-time', changeList))
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
+
+    def on_TVCM_SyncDialog(self, widget):
+        if self.model.subtitles.is_empty():
+            return
+        changeList = []
+        cSyncDialog(self.view, self.model.subtitles, self.view['subtitles'], changeList)
+        self.history.add(('menu-change-time', changeList))
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
+
+    def on_TVCM_DurationEdit(self, widget):
+        if self.model.subtitles.is_empty():
+            return
+        changeList = []
+        cDurationChangeDialog(self.view, self.model.subtitles, self.view['subtitles'], changeList)
+        self.history.add(('menu-change-time', changeList))
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
 
     def on_audio_tmpSub_update(self, sender):
         if self.view['audio'].tmpSub != None:
@@ -187,6 +233,8 @@ class Controller:
             return False
 
     def on_TB_import_srt(self, widget):
+        if self.view['audio'].videoDuration == 0:
+            return
         dialog = Gtk.FileChooserDialog('Import SRT', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
@@ -316,10 +364,16 @@ class Controller:
         self.view['audio'].queue_draw()
 
     def preferences_clicked(self, sender):
-        prefs = cPreferencesDialog(self.view, self.preferences.get_data())
+        prefs = cPreferencesDialog(self.view, self.preferences.get_data(), (self.view['audio'].viewportLower, self.view['audio'].viewportUpper))
         res = prefs.run()
         if res == Gtk.ResponseType.OK:
             self.preferences.set_data(prefs.preferences)
+            curVH = self.view['audio'].viewportUpper
+            curVL = self.view['audio'].viewportLower
+            midV = curVL + (curVH - curVL) / 2.0
+            diff = 1 / self.preferences['Zoom']
+            self.view['audio'].viewportLower = midV - diff / 2.0
+            self.view['audio'].viewportUpper = midV + diff / 2.0
             self.preferences.save()
         prefs.destroy()
 
@@ -333,13 +387,18 @@ class Controller:
             if res == Gtk.ResponseType.OK:
                 self.on_save_button_clicked(None)
             save_changes_dialog.destroy()
-        #self.view['statusbar'].del_timer()
         Gtk.main_quit()
 
     def hist_back(self):
         if self.history.is_empty() or self.history.is_at_first_element():
             return
         curHistItem = self.history.back()
+        if curHistItem[0] == 'menu-change-time':
+            for item in curHistItem[1]:
+                item[0].startTime = int(item[1])
+                item[0].stopTime = int(item[2])
+        if curHistItem[0] == 'replace-text':
+            curHistItem[1].text = curHistItem[2]
         if curHistItem[0] == 'edit-text':
             curHistItem[1].text = curHistItem[2]
         if curHistItem[0] == 'edit-startTime':
@@ -373,10 +432,19 @@ class Controller:
             curHistItem[1].stopTime = curHistItem[3]
             self.view['audio'].activeSub = curHistItem[1]
 
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
+
     def hist_forward(self):
         if self.history.is_at_last_element() or self.history.is_empty():
             return
         curHistItem = self.history.forward()
+        if curHistItem[0] == 'menu-change-time':
+            for item in curHistItem[1]:
+                item[0].startTime = int(item[3])
+                item[0].stopTime = int(item[4])
+        if curHistItem[0] == 'replace-text':
+            curHistItem[1].text = curHistItem[3]
         if curHistItem[0] == 'edit-text':
             curHistItem[1].text = curHistItem[3]
         if curHistItem[0] == 'edit-startTime':
@@ -408,6 +476,9 @@ class Controller:
             self.model.subtitles.append(curHistItem[2])
             self.view['audio'].activeSub = curHistItem[1]
 
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
+
     def on_undo_clicked(self, sender):
         self.hist_back()
         self.view['subtitles'].queue_draw()
@@ -437,6 +508,39 @@ class Controller:
     def on_key_release(self, widget, event):
         if event.keyval == Gdk.KEY_Escape:
             self.model.video.pause()
+        elif event.keyval == Gdk.KEY_F5:
+            if self.view['audio'].activeSub == None:
+                return
+            prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
+            if prev == None:
+                return
+            path = self.model.subtitles.get_sub_path(prev)
+            if path != None:
+                self.view['subtitles'].set_cursor(path)
+                self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
+            self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
+            self.view['audio'].queue_draw()
+            self.model.video.set_segment(self.view['audio'].videoSegment)
+            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.play()
+        elif event.keyval == Gdk.KEY_F12:
+            if self.view['audio'].videoDuration == 0:
+                return
+            if self.model.video.is_playing():
+                self.model.video.pause()
+            else:
+                self.model.video.set_segment((self.view['audio'].videoSegment[0],  self.view['audio'].videoDuration))
+                self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+                self.model.video.play()
+        elif event.keyval in [Gdk.KEY_p,  Gdk.KEY_P, 2000, 2032]:
+            if self.view['audio'].videoDuration == 0:
+                return
+            if self.model.video.is_playing():
+                self.model.video.pause()
+            else:
+                self.model.video.set_segment((self.view['audio'].pos,  self.view['audio'].videoDuration))
+                self.model.video.set_videoPosition(int(self.view['audio'].pos) / float(self.view['audio'].videoDuration))
+                self.model.video.play()
         elif event.keyval == Gdk.KEY_F6:
             if self.view['audio'].activeSub == None:
                 return
@@ -449,6 +553,9 @@ class Controller:
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
             self.view['audio'].queue_draw()
+            self.model.video.set_segment(self.view['audio'].videoSegment)
+            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
@@ -469,7 +576,7 @@ class Controller:
         elif (event.keyval in [Gdk.KEY_F, Gdk.KEY_f, 2038, 2006]):
             if self.model.subtitles.is_empty():
                 return
-            cSearchReplaceDialog(self.view, self.view['subtitles'], self.model.subtitles)
+            cSearchReplaceDialog(self.view, self.view['subtitles'], self.model.subtitles, self.history)
 
 
     def on_new_button_clicked(self, widget):
@@ -701,7 +808,7 @@ class Controller:
             res = self.view['subtitles'].get_path_at_pos(event.x, event.y)
             if self.view['subtitles'].get_column(8) == res[1]:
                 sub = self.model.subtitles.get_sub_from_path(res[0])
-                dialog = cTextEditDialog(self.view, sub, 'info')
+                dialog = cTextEditDialog(self.view, sub, 'info', self.view['subtitles'].thesaurus)
                 response = dialog.run()
                 if response == Gtk.ResponseType.OK:
                     self.history.add(('edit-text', sub, sub.text, dialog.text))
@@ -716,6 +823,16 @@ class Controller:
                 self.save_subs_info()
 
         if event.button == 3:
+            res = self.view['subtitles'].get_path_at_pos(event.x, event.y)
+            if res[1] in [self.view['subtitles'].get_column(1), self.view['subtitles'].get_column(2), self.view['subtitles'].get_column(3)]:
+                self.view['TVCM-DurationEdit'].show()
+                self.view['TVCM-TimeEditDialog'].show()
+                self.view['TVCM-SyncDialog'].show()
+            else:
+                self.view['TVCM-SyncDialog'].hide()
+                self.view['TVCM-TimeEditDialog'].hide()
+                self.view['TVCM-DurationEdit'].hide()
+
             if len(self.tvSelectionList) == 0:
                 return True
 
@@ -861,7 +978,6 @@ class Controller:
         srtFile(self.model.subFilename).write_to_file(self.model.subtitles.get_model(), encoding = self.preferences['Encoding'])
         self.save_subs_info()
         self.model.subtitles.clear_changed()
-        #self.view['statusbar'].output('Subtitle Saved.')
         self.check_modified()
 
     def on_mainwindow_resize(self, widget):
@@ -878,6 +994,10 @@ class Controller:
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
             self.resizeEventCounter = 2
+        if (hasattr(self, 'init_done') and self.init_done) and (not ('subViewSize' in self.preferences and 'audioViewSize' in self.preferences) or not (self.preferences['subViewSize'] == self.view.subtitlesViewSize and self.preferences['audioViewSize'] == self.view.audioViewSize)):
+            self.preferences['subViewSize'] = self.view.subtitlesViewSize
+            self.preferences['audioViewSize'] = self.view.audioViewSize
+            self.preferences.save()
 
     def on_video_finish(self, bus, message):
         self.model.video.pause()
@@ -902,9 +1022,25 @@ class Controller:
     def on_video_position(self, sender, position):
         self.view['audio'].pos = int(self.model.video.get_videoDuration()*position/1000000.0)
         self.view['position-label'].set_label('Position: '+ms2ts(int(self.model.video.get_videoDuration()*position/1000000.0))+' ')
+        
+        # Show Subtitle on Video
         res = self.model.subtitles.inside_sub( int(self.model.video.get_videoDuration()*position/1000000.0) )
         text = res.text if res != None else ''
         self.model.video.set_subtitle(text)
+        
+        # Follow video position in audioview
+        pos = self.view['audio'].pos / float(self.view['audio'].videoDuration)
+        vup = self.view['audio'].viewportUpper
+        vlow = self.view['audio'].viewportLower
+        vdiff = vup - vlow
+        if pos > vlow + vdiff * 0.98:
+            self.view['audio'].viewportLower = pos - vdiff * 0.10
+            self.view['audio'].viewportUpper = pos + vdiff * 0.90
+            self.view['audio'].queue_draw()
+        if pos < vlow:
+            self.view['audio'].viewportLower = pos - vdiff * 0.10
+            self.view['audio'].viewportUpper = pos + vdiff * 0.90
+            self.view['audio'].queue_draw()            
 
     def check_video_file_compatibility(self, filename):
         media_info = cMediaInfo(filename)

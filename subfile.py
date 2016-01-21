@@ -10,6 +10,8 @@ class srtFile:
         self.digitLine = re.compile("[0-9]+")
 
     def encoding_detection(self, data):
+        if self.file_has_BOM():
+            return 'UTF-8'
         encoding = {}
         for line in data:
             if len(self.digitLine.findall(line)) > 0 or len(self.timeLine.findall(line)) > 0:
@@ -43,7 +45,7 @@ class srtFile:
             lines = str(i[1][0]).splitlines()
             for line in lines:
                 if encoding == 'Windows-1253':
-                    f.write(line.decode('utf-8').encode('Windows-1253') + '\n')
+                    f.write(line.decode('utf-8').encode(encoding = 'Windows-1253', errors = 'ignore') + '\n')
                 elif encoding == 'UTF-8 BOM':
                     f.write(line + '\n')
             f.write('\n')
@@ -54,7 +56,6 @@ class srtFile:
         data = f.readlines()
         f.close()
 
-        #if not self.file_has_BOM():
         encoding = self.encoding_detection(data)
         if not ('UTF' in encoding.upper() or 'ASCII' in encoding.upper()):
             data = self.convert_to_utf8(data, 'windows-1253')
