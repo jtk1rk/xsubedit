@@ -54,7 +54,18 @@ class Controller:
             if e.errno != errno.EEXIST:
                 raise
 
-        view['subtitles'].thesaurus = cThesaurus('thesaurus.pz')
+        # Load Thesaurus
+        path = ''
+        if exists('thesaurus.pz'):
+            path = 'thesaurus.pz'
+        elif exists('/usr/share/xsubedit/thesaurus.pz'):
+            path = '/usr/share/xsubedit/thesaurus.pz'
+        elif exists('/usr/local/share/xsubedit/thesaurus.pz'):
+            path = '/usr/local/share/xsubedit/thesaurus.pz'
+        else:
+            raise('Cannot find thesaurus.pz')
+
+        view['subtitles'].thesaurus = cThesaurus(path)
 
         self.preferences = cPreferences(appdirs.user_config_dir('xSubEdit', 'jtapps') + DIR_DELIMITER + 'xSubEdit.conf')
 
