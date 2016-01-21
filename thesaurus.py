@@ -8,7 +8,7 @@ class cThesaurus:
         if not(exists(ThesaurusFile)):
             raise IOError("Thesaurus file not found")
 
-        with open('thesaurus.pz', 'rb') as f:
+        with open(ThesaurusFile, 'rb') as f:
             dump = zlib.decompress(f.read())
 
         self.thesaurus = pickle.loads(dump)
