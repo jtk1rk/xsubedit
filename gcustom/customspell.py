@@ -107,7 +107,7 @@ class Checker:
     def on_buffer_changed(self,  buffer):
         if self.spellchecker == None:
             return
-        self.buffer.remove_all_tags(self.buffer.get_start_iter(), self.buffer.get_end_iter())
+        self.buffer.remove_tag_by_name('customspell-error', self.buffer.get_start_iter(), self.buffer.get_end_iter())
         self.text_view.queue_draw()
 
         pointer = self.buffer.get_start_iter().copy()
