@@ -1,5 +1,7 @@
 from numpy import exp
 
+iround = lambda x: int(round(x))
+
 class StretchableList(list):
     def stretch(self, newlen):
         old = [ (i * (newlen-1), self[i]) for i in range(len(self)) ]
@@ -64,15 +66,15 @@ class Audio(object):
             spp = float(upperIDX - lowerIDX) / self.width
             if self.width <= upperIDX - lowerIDX:
                 for i in xrange(self.width):
-                    hiPeak = self.hiData[round(lowerIDX + i * spp) : round(lowerIDX + (i+1) * spp)].max()
-                    lowPeak = self.lowData[round(lowerIDX + i * spp) : round(lowerIDX + (i+1) * spp)].max()
+                    hiPeak = self.hiData[iround(lowerIDX + i * spp) : iround(lowerIDX + (i+1) * spp)].max()
+                    lowPeak = self.lowData[iround(lowerIDX + i * spp) : iround(lowerIDX + (i+1) * spp)].max()
                     res.append((hiPeak, lowPeak))
             else:
                 r = self.width / float(upperIDX - lowerIDX)
                 for i in xrange(self.width):
-                    if round(lowerIDX + i /r) >= len(self.hiData):
+                    if iround(lowerIDX + i /r) >= len(self.hiData):
                         continue
-                    res.append( ( self.hiData[round(lowerIDX + i / r)], self.lowData[round(lowerIDX + i / r)] ) )
+                    res.append( ( self.hiData[iround(lowerIDX + i / r)], self.lowData[iround(lowerIDX + i / r)] ) )
             self.cache = (lower, upper, self.width, res)
             return res
 
