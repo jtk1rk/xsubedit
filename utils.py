@@ -23,18 +23,24 @@ class cPreferences:
         self.data =  {'Encoding': 'Windows-1253', 'Incremental_Backups': True, 'Autosave': True}
 
     def load(self):
-        if exists(self.filename):
-            self.data = pickle.load( open(self.filename,  'rb') )
+        try:
+            if exists(self.filename):
+                self.data = pickle.load( open(self.filename,  'rb') )
+        except:
+            pass
 
     def save(self):
-        pickle.dump( self.data,  open(self.filename,  'wb'), protocol = pickle.HIGHEST_PROTOCOL )
+        try:
+            pickle.dump( self.data,  open(self.filename,  'wb'), protocol = pickle.HIGHEST_PROTOCOL )
+        except:
+            pass
 
     def keys(self):
         return self.data.keys()
 
     def get_data(self):
         return self.data.copy()
-    
+
     def set_data(self,  prefs):
         self.data = prefs.copy()
 
