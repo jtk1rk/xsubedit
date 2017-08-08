@@ -27,7 +27,7 @@ class cPreferences:
             self.data = pickle.load( open(self.filename,  'rb') )
 
     def save(self):
-        pickle.dump( self.data,  open(self.filename,  'wb') )
+        pickle.dump( self.data,  open(self.filename,  'wb'), protocol = pickle.HIGHEST_PROTOCOL )
 
     def keys(self):
         return self.data.keys()
