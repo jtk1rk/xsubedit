@@ -43,12 +43,16 @@ class Model(GObject.GObject):
     def get_waveform(self):
         if self.peakFilename == "":
             return
-        f = open(self.peakFilename.decode('utf-8'), 'rb')
-        dataFile = load(f)
-        hiAudio = dataFile['arr_0']
-        lowAudio = dataFile['arr_1']
-        f.close()
-        self.audio = Audio(hiAudio, lowAudio)
-        self.video.calc_duration()
-        self.ready = True
-        self.emit("audio-ready")
+        try:
+            f = open(self.peakFilename.decode('utf-8'), 'rb')
+            dataFile = load(f)
+            hiAudio = dataFile['arr_0']
+            lowAudio = dataFile['arr_1']
+            f.close()
+            self.audio = Audio(hiAudio, lowAudio)
+            self.video.calc_duration()
+            self.ready = True
+            self.emit("audio-ready")
+        except:
+            return
+
