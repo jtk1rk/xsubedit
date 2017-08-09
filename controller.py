@@ -521,8 +521,10 @@ class Controller:
             self.model.video.pause()
         elif event.keyval == Gdk.KEY_F5:
             if self.view['audio'].activeSub == None:
-                return
-            prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
+                posts = timeStamp(int(self.view['audio'].cursor))
+                prev = self.model.subtitles.get_sub_before_timeStamp(posts)
+            else:
+                prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
             if prev == None:
                 return
             path = self.model.subtitles.get_sub_path(prev)
@@ -554,8 +556,10 @@ class Controller:
                 self.model.video.play()
         elif event.keyval == Gdk.KEY_F6:
             if self.view['audio'].activeSub == None:
-                return
-            next = self.model.subtitles.get_next(self.view['audio'].activeSub)
+                posts = timeStamp(int(self.view['audio'].cursor))
+                next = self.model.subtitles.get_sub_after_timeStamp(posts)
+            else:
+                next = self.model.subtitles.get_next(self.view['audio'].activeSub)
             if next == None:
                 return
             path = self.model.subtitles.get_sub_path(next)
@@ -570,6 +574,9 @@ class Controller:
         elif event.keyval == Gdk.KEY_F1:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            print self.view['audio'].videoSegment[0]
+            print self.view['audio'].videoDuration
+
             self.model.video.play()
         elif (event.keyval in [Gdk.KEY_Z, Gdk.KEY_z, 2022, 1990]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             if event.state & Gdk.ModifierType.SHIFT_MASK:
