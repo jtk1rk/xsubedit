@@ -64,8 +64,8 @@ class Audio(object):
             lowerIDX = lower * self.dataSize
             upperIDX = upper * self.dataSize
             spp = float(upperIDX - lowerIDX) / self.width
-            if self.width <= upperIDX - lowerIDX:
-                for i in xrange(self.width):
+            if iround(self.width) <= upperIDX - lowerIDX:
+                for i in xrange(iround(self.width)):
                     hiPeak = self.hiData[iround(lowerIDX + i * spp) : iround(lowerIDX + (i+1) * spp)].max()
                     lowPeak = self.lowData[iround(lowerIDX + i * spp) : iround(lowerIDX + (i+1) * spp)].max()
                     res.append((hiPeak, lowPeak))

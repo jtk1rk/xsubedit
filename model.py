@@ -7,6 +7,7 @@ from audio import Audio
 from subtitles import Subtitles
 from voreference import cVOReference
 from numpy import load
+import sys
 
 class Model(GObject.GObject):
     __gsignals__ = { 'audio-ready': (GObject.SIGNAL_RUN_LAST, None, ()) }
@@ -43,16 +44,13 @@ class Model(GObject.GObject):
     def get_waveform(self):
         if self.peakFilename == "":
             return
-        try:
-            f = open(self.peakFilename.decode('utf-8'), 'rb')
-            dataFile = load(f)
-            hiAudio = dataFile['arr_0']
-            lowAudio = dataFile['arr_1']
-            f.close()
-            self.audio = Audio(hiAudio, lowAudio)
-            self.video.calc_duration()
-            self.ready = True
-            self.emit("audio-ready")
-        except:
-            return
+        f = open(self.peakFilename.decode('utf-8'), 'rb')
+        dataFile = load(f)
+        hiAudio = dataFile['arr_0']
+        lowAudio = dataFile['arr_1']
+        f.close()
+        self.audio = Audio(hiAudio, lowAudio)
+        self.video.calc_duration()
+        self.ready = True
+        self.emit("audio-ready")
 
