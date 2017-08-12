@@ -527,14 +527,15 @@ class Controller:
                 prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
             if prev == None:
                 return
+            self.view['audio'].activeSub = prev
             path = self.model.subtitles.get_sub_path(prev)
+            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             if path != None:
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
             self.view['audio'].queue_draw()
             self.model.video.set_segment(self.view['audio'].videoSegment)
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F12:
             if self.view['audio'].videoDuration == 0:
@@ -542,8 +543,8 @@ class Controller:
             if self.model.video.is_playing():
                 self.model.video.pause()
             else:
-                self.model.video.set_segment((self.view['audio'].videoSegment[0],  self.view['audio'].videoDuration))
                 self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+                self.model.video.set_segment((self.view['audio'].videoSegment[0],  self.view['audio'].videoDuration))
                 self.model.video.play()
         elif event.keyval in [Gdk.KEY_p,  Gdk.KEY_P, 2000, 2032]:
             if self.view['audio'].videoDuration == 0:
@@ -551,32 +552,30 @@ class Controller:
             if self.model.video.is_playing():
                 self.model.video.pause()
             else:
-                self.model.video.set_segment((self.view['audio'].pos,  self.view['audio'].videoDuration))
                 self.model.video.set_videoPosition(int(self.view['audio'].pos) / float(self.view['audio'].videoDuration))
+                self.model.video.set_segment((self.view['audio'].pos,  self.view['audio'].videoDuration))
                 self.model.video.play()
         elif event.keyval == Gdk.KEY_F6:
             if self.view['audio'].activeSub == None:
                 posts = timeStamp(int(self.view['audio'].cursor))
-                next = self.model.subtitles.get_sub_after_timeStamp(posts)
+                nexts = self.model.subtitles.get_sub_after_timeStamp(posts)
             else:
-                next = self.model.subtitles.get_next(self.view['audio'].activeSub)
-            if next == None:
+                nexts = self.model.subtitles.get_next(self.view['audio'].activeSub)
+            if nexts == None:
                 return
-            path = self.model.subtitles.get_sub_path(next)
+            self.view['audio'].activeSub = nexts
+            path = self.model.subtitles.get_sub_path(nexts)
+            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             if path != None:
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
             self.view['audio'].queue_draw()
             self.model.video.set_segment(self.view['audio'].videoSegment)
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
-            self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
-            print self.view['audio'].videoSegment[0]
-            print self.view['audio'].videoDuration
-
+            self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif (event.keyval in [Gdk.KEY_Z, Gdk.KEY_z, 2022, 1990]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             if event.state & Gdk.ModifierType.SHIFT_MASK:
@@ -1060,12 +1059,12 @@ class Controller:
     def on_video_position(self, sender, position):
         self.view['audio'].pos = int(self.model.video.get_videoDuration()*position/1000000.0)
         self.view['position-label'].set_label('Position: '+ms2ts(int(self.model.video.get_videoDuration()*position/1000000.0))+' ')
-        
+
         # Show Subtitle on Video
         res = self.model.subtitles.inside_sub( int(self.model.video.get_videoDuration()*position/1000000.0) )
         text = res.text if res != None else ''
         self.model.video.set_subtitle(text)
-        
+
         # Follow video position in audioview
         pos = self.view['audio'].pos / float(self.view['audio'].videoDuration)
         vup = self.view['audio'].viewportUpper

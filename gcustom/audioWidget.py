@@ -546,6 +546,7 @@ class cAudioWidget(Gtk.EventBox):
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()
+        self.videoSegment = (int(self.activeSub.startTime), int(self.activeSub.stopTime))
         self.emit('viewpos-update', int(100 * low / float(self.videoDuration)))
 
     def center_multiple_active_subs(self, startTime, stopTime):

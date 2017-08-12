@@ -127,6 +127,7 @@ class Video(GObject.GObject):
 #        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, self.videoDuration * pos)
         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, self.videoDuration * pos)
         self.videoPosition = pos
+        self.__last_segment = None
         self.emit("position-update", self.videoPosition)
 
     def get_videoDuration(self):
