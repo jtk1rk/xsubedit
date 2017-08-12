@@ -267,33 +267,26 @@ class cAudioWidget(Gtk.EventBox):
             if self.overSub == None:
                 self.overHandle = None
 
-    def on_scroll(self, widget, event):
+    def zoom(self, direction, xcoord):
         if self.videoDuration == 0:
-            return
-
-        if event.state & Gdk.ModifierType.CONTROL_MASK:
-            if event.direction == Gdk.ScrollDirection.UP:
-                self.scale_linear_audio += 0.2
-            elif event.direction == Gdk.ScrollDirection.DOWN:
-                self.scale_linear_audio -= 0.2
             return
 
         na = self.viewportLower * 100
         nb = self.viewportUpper * 100
 
-        center = event.x / float(self.width)
+        center = xcoord / float(self.width)
         a = self.viewportLower * 100
         b = self.viewportUpper * 100
         c = a + (b-a) * center
         factor = 0.1
 
-        if event.direction == Gdk.ScrollDirection.UP:
+        if direction == Gdk.ScrollDirection.UP:
             na = c - (1 - factor) * ( c - a )
             nb = c + (1 - factor) * ( b - c)
             if abs(na-nb) < 0.002:
                 return
 
-        if event.direction == Gdk.ScrollDirection.DOWN:
+        if direction == Gdk.ScrollDirection.DOWN:
             na = c - (1 + factor) * (c - a)
             nb = c + (1 + factor) * (b - c)
             if abs(na-nb) > 50:
@@ -303,6 +296,32 @@ class cAudioWidget(Gtk.EventBox):
 
         self.viewportLower = min(na, nb) / 100
         self.viewportUpper = max(na, nb) / 100
+        self.queue_draw()
+        
+    def on_scroll(self, widget, event):
+        if self.videoDuration == 0:
+            return
+
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
+            if event.direction == Gdk.ScrollDirection.UP:
+                self.scale_linear_audio += 0.2
+            elif event.direction == Gdk.ScrollDirection.DOWN:
+                self.scale_linear_audio -= 0.2
+            return
+
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
+            self.zoom(event.direction, event.x)
+            return
+        
+        self.calc_parameters()
+        moveval = self.mspp
+        if event.direction == Gdk.ScrollDirection.UP and self.highms < self.videoDuration + moveval:
+            self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
+            self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
+        elif event.direction == Gdk.ScrollDirection.DOWN and self.lowms > moveval:
+            self.viewportLower = (self.lowms - moveval) / float(self.videoDuration)
+            self.viewportUpper = (self.highms - moveval) / float(self.videoDuration)
+
         self.queue_draw()
 
     def invalidateCanvas(self):
@@ -515,21 +534,17 @@ class cAudioWidget(Gtk.EventBox):
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
 
     def center_active_sub(self):
-        curHalfWidth = (self.highms - self.lowms) / 2.0
-        subCenter = int(self.activeSub.startTime) + int(self.activeSub.stopTime - self.activeSub.startTime) / 2.0
-        low = subCenter - curHalfWidth
-        high = subCenter + curHalfWidth
+        vpdiff = 0.017
+        low = int(self.activeSub.startTime)
+        high = int(self.activeSub.stopTime)
         if low < 0:
-            diff = low
             low = 0
-            high = subCenter + curHalfWidth + abs(diff)
-        elif high > self.videoDuration:
-            diff = self.videoDuration - high
-            low = subCenter - curHalfWidth - abs(diff)
+        if high > self.videoDuration:
             high = self.videoDuration
-        self.viewportLower = low / float(self.videoDuration)
-        self.viewportUpper = high / float(self.videoDuration)
+        self.viewportLower = (low / float(self.videoDuration)) * (1-vpdiff)
+        self.viewportUpper = (high / float(self.videoDuration)) * (1+vpdiff)
         self.isCanvasBufferValid = False
+        self.cursor = low
         self.queue_draw()
         self.emit('viewpos-update', int(100 * low / float(self.videoDuration)))
 

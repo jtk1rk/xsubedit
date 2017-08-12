@@ -595,6 +595,26 @@ class Controller:
             if self.model.subtitles.is_empty():
                 return
             cSearchReplaceDialog(self.view, self.view['subtitles'], self.model.subtitles, self.history)
+        elif (event.keyval in [Gdk.KEY_plus, Gdk.KEY_KP_Add]) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            audio = self.view['audio']
+            if audio.videoDuration == 0:
+                return
+            cr = audio.cursor
+            if audio.lowms > cr or audio.highms < cr:
+                pointx = int(audio.get_allocation().width / 2)
+            else:
+                pointx = int(((cr - audio.lowms) / float(audio.highms - audio.lowms)) * audio.get_allocation().width)
+            audio.zoom(Gdk.ScrollDirection.UP, pointx)
+        elif (event.keyval in [Gdk.KEY_minus, Gdk.KEY_KP_Subtract]) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            audio = self.view['audio']
+            if audio.videoDuration == 0:
+                return
+            cr = audio.cursor
+            if audio.lowms > cr or audio.highms < cr:
+                pointx = int(audio.get_allocation().width / 2)
+            else:
+                pointx = int(((cr - audio.lowms) / float(audio.highms - audio.lowms)) * audio.get_allocation().width)
+            audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
 
 
     def on_new_button_clicked(self, widget):
