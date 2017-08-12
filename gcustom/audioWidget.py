@@ -299,6 +299,9 @@ class cAudioWidget(Gtk.EventBox):
         self.queue_draw()
 
     def on_scroll(self, widget, event):
+        #print "Direction up=", event.direction == Gdk.ScrollDirection.UP
+        #print "Stuck keys? CTRL, SHIFT", event.state & Gdk.ModifierType.CONTROL_MASK, event.state & Gdk.ModifierType.SHIFT_MASK
+        #print "X Coordinate", event.x
         if self.videoDuration == 0:
             return
 
@@ -314,7 +317,7 @@ class cAudioWidget(Gtk.EventBox):
             return
 
         self.calc_parameters()
-        moveval = self.mspp
+        moveval = 20*self.mspp
         if event.direction == Gdk.ScrollDirection.UP and self.highms < self.videoDuration + moveval:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
