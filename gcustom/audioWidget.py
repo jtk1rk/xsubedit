@@ -133,7 +133,7 @@ class cAudioWidget(Gtk.EventBox):
             self.activeSub = self.overSub
             self.isCanvasBufferValid = False
             self.queue_draw()
-        
+
         if self.mouse_button == self.BUTTON_LEFT:
             self.tmpSub = None
             self.activeSub = None
@@ -297,22 +297,22 @@ class cAudioWidget(Gtk.EventBox):
         self.viewportLower = min(na, nb) / 100
         self.viewportUpper = max(na, nb) / 100
         self.queue_draw()
-        
+
     def on_scroll(self, widget, event):
         if self.videoDuration == 0:
             return
 
-        if event.state & Gdk.ModifierType.SHIFT_MASK:
+        if event.state & Gdk.ModifierType.CONTROL_MASK:
             if event.direction == Gdk.ScrollDirection.UP:
                 self.scale_linear_audio += 0.2
             elif event.direction == Gdk.ScrollDirection.DOWN:
                 self.scale_linear_audio -= 0.2
             return
 
-        if event.state & Gdk.ModifierType.CONTROL_MASK:
+        if event.state & Gdk.ModifierType.SHIFT_MASK:
             self.zoom(event.direction, event.x)
             return
-        
+
         self.calc_parameters()
         moveval = self.mspp
         if event.direction == Gdk.ScrollDirection.UP and self.highms < self.videoDuration + moveval:
