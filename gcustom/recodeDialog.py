@@ -7,10 +7,10 @@ from cffmpeg import cffmpeg
 from gcustom.messageDialog import cMessageDialog
 
 class cRecodeDialog(Gtk.Window):
-    def __init__(self, parent, filename, new_filename):
+    def __init__(self, parent, filename, new_filename, ffmpeg_cmd, title):
         super(cRecodeDialog, self).__init__()
         self.parent = parent
-        self.set_title("Generating a fixed b-frame video")
+        self.set_title(title)
         self.set_modal(True)
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
@@ -24,7 +24,7 @@ class cRecodeDialog(Gtk.Window):
             window.set_functions(0)
         self.new_filename = new_filename.decode('utf-8')
         self.filename = filename.decode('utf-8')
-        self.ffmpeg = cffmpeg('ffmpeg -y -fflags +genpts -i "' + self.filename + '" -c:a aac -strict -2 -c:v copy "' + self.new_filename + '"')
+        self.ffmpeg = cffmpeg(ffmpeg_cmd.replace('SOURCEFILE', self.filename).replace('DESTFILE', self.new_filename))
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
         self.result = False
 

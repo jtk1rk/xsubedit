@@ -1058,15 +1058,20 @@ class Controller:
         if pos < vlow:
             self.view['audio'].viewportLower = pos - vdiff * 0.10
             self.view['audio'].viewportUpper = pos + vdiff * 0.90
-            self.view['audio'].queue_draw()            
+            self.view['audio'].queue_draw()
 
     def check_video_file_compatibility(self, filename):
+        if platform.system() != 'Windows':
+            return filename
         media_info = cMediaInfo(filename)
         media_info.run()
-        if media_info.packed and platform.system() == 'Windows':
-            new_filename = splitext(filename)[0] + '-fixed.mkv'
-            recodeDialog = cRecodeDialog(self.view, filename, new_filename)
+        new_filename = splitext(filename)[0] + '-fixed.mkv'
+        if media_info.packed:
+            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -fflags +genpts -i "SOURCEFILE" -c:a aac -b:a 128k -ar 22050 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Generating a fixed b-frame video')
             recodeDialog.run()
             return new_filename if recodeDialog.result else ''
-        else:
-            return filename
+        elif media_info.audio_codec != 'A_AAC':
+            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE"  -c:a aac -b:a 128k -ar 8000 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Converting to compatible audio codec (aac)')
+            recodeDialog.run()
+            return new_filename if recodeDialog.result else ''
+        return filename

@@ -102,7 +102,7 @@ missingDLL = ['libffi-6.dll',
               'libproxy.dll',
               'libp11-kit-0.dll',
               #'libepoxy-0.dll',
-              'libgnutls-26.dll'
+              'libgnutls-28.dll'
               #'libavcodec-56.dll',
               #'libgcrypt-11.dll',
               #'libgstadaptivedemux-1.0-0.dll',
@@ -152,10 +152,10 @@ setup(
     version = "1.0",
     description = "Subtitle Editor for xSubs",
     options = {'build_exe' : {
-        'compressed': True,
-        'includes': ["gi"],
-        'excludes': ['wx', 'email', 'pydoc_data', 'curses', 'tk'],
-        'packages': ["gi"],
+#        'compressed': True,
+        'includes': ["gi",'numpy.core._methods','numpy.lib.format'],
+        'excludes': [],#['wx', 'email', 'pydoc_data', 'curses', 'tk'],
+        'packages': ["gi", 'idna'],
         'include_files': includeFiles
     }},
     executables = [
