@@ -31,6 +31,7 @@ from cmediainfo import cMediaInfo
 import ctypes, platform
 import pickle
 import appdirs
+import sys
 
 class Controller:
 
@@ -399,6 +400,7 @@ class Controller:
                 self.on_save_button_clicked(None)
             save_changes_dialog.destroy()
         Gtk.main_quit()
+        sys.exit()
 
     def hist_back(self):
         if self.history.is_empty() or self.history.is_at_first_element():
@@ -1090,7 +1092,7 @@ class Controller:
             recodeDialog.run()
             return new_filename if recodeDialog.result else ''
         elif media_info.audio_codec != 'A_AAC':
-            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE"  -c:a aac -b:a 128k -ar 8000 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Converting to compatible audio codec (aac)')
+            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE"  -c:a aac -b:a 128k -ar 22050 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Converting to compatible audio codec (aac)')
             recodeDialog.run()
             return new_filename if recodeDialog.result else ''
         return filename
