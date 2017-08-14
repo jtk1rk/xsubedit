@@ -280,13 +280,13 @@ class cAudioWidget(Gtk.EventBox):
         c = a + (b-a) * center
         factor = 0.1
 
-        if direction == Gdk.ScrollDirection.DOWN:
+        if direction == Gdk.ScrollDirection.UP:
             na = c - (1 - factor) * ( c - a )
             nb = c + (1 - factor) * ( b - c)
             if abs(na-nb) < 0.002:
                 return
 
-        if direction == Gdk.ScrollDirection.UP:
+        if direction == Gdk.ScrollDirection.DOWN:
             na = c - (1 + factor) * (c - a)
             nb = c + (1 + factor) * (b - c)
             if abs(na-nb) > 50:
@@ -315,10 +315,10 @@ class cAudioWidget(Gtk.EventBox):
 
         self.calc_parameters()
         moveval = 25 * self.mspp
-        if event.direction == Gdk.ScrollDirection.UP and self.highms < self.videoDuration + moveval:
+        if event.direction == Gdk.ScrollDirection.DOWN and self.highms < self.videoDuration + moveval:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
-        elif event.direction == Gdk.ScrollDirection.DOWN and self.lowms > moveval:
+        elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:
             self.viewportLower = (self.lowms - moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms - moveval) / float(self.videoDuration)
 
@@ -534,7 +534,7 @@ class cAudioWidget(Gtk.EventBox):
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
 
     def center_active_sub(self):
-        vpdiff = 4.75
+        vpdiff = 1
         low = int(self.activeSub.startTime)
         high = int(self.activeSub.stopTime)
         msdur = ((high - low) * vpdiff) / 2
