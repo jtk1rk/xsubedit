@@ -217,9 +217,11 @@ class cTextEditDialog(Gtk.Dialog):
             stm_bold.connect('activate', self.bold_activated, self.text_view)
             popup.show_all()
         # Add Synonyms Menu
-        iter = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)[1]
-        p1 = iter.copy()
-        p2 = iter.copy()
+        itr = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)
+        if type(itr) is tuple:
+            itr = itr[1]
+        p1 = itr.copy()
+        p2 = itr.copy()
         p1.backward_word_start()
         p2.forward_word_end()
         word = self.text_view.get_buffer().get_text(p1, p2, False)
