@@ -306,7 +306,7 @@ class subRec(GObject.GObject):
         lines_length = []
         lines = self.text.splitlines()
         for line in lines:
-            lines_length.append(len(line.replace('<i>','').replace('</i>','').replace('<b>').replace('</b>')))
+            lines_length.append(len(line.replace('<i>','').replace('</i>','').replace('<b>','').replace('</b>','')))
         self.char_count = lines_length
 
     def calc_target_duration(self):
