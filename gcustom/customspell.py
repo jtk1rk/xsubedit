@@ -32,7 +32,7 @@ class Checker:
         self.changed_handler_id = self.buffer.connect('changed', self.on_buffer_changed)
         self.buffer.create_tag(tag_name="customspell-error", underline=Pango.Underline.ERROR)
         self.popup_populate_handler = self.text_view.connect('populate-popup', self.on_populate_popup)
-    
+
     def detach(self):
         if self.changed_handler_id == None:
             return
@@ -45,13 +45,13 @@ class Checker:
     def on_populate_popup(self, sender, popup):
         if not (hasattr(self.text_view, 'last_mouse_x') and hasattr(self.text_view, 'last_mouse_y')) or self.spellchecker is None:
             return
-        iter = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)
-        p1 = iter.copy()
-        p2 = iter.copy()
+        itr = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)[1]
+        p1 = itr.copy()
+        p2 = itr.copy()
         p1.backward_word_start()
         p2.forward_word_end()
         word = self.buffer.get_text(p1, p2, False)
-        
+
         if self.spellchecker.check(word):
             removeWordMenuItem = Gtk.MenuItem('Remove Word')
             popup.insert(Gtk.SeparatorMenuItem(), 0)
@@ -127,5 +127,5 @@ class Checker:
         for entry in word_list:
             if entry[0] == '':
                 continue
-            if not self.spellchecker.check(entry[0]):
+            if not self.spellchecker.check(entry[0].strip()):
                 buffer.apply_tag_by_name("customspell-error", entry[1], entry[2])

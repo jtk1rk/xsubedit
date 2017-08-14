@@ -280,13 +280,13 @@ class cAudioWidget(Gtk.EventBox):
         c = a + (b-a) * center
         factor = 0.1
 
-        if direction == Gdk.ScrollDirection.UP:
+        if direction == Gdk.ScrollDirection.DOWN:
             na = c - (1 - factor) * ( c - a )
             nb = c + (1 - factor) * ( b - c)
             if abs(na-nb) < 0.002:
                 return
 
-        if direction == Gdk.ScrollDirection.DOWN:
+        if direction == Gdk.ScrollDirection.UP:
             na = c - (1 + factor) * (c - a)
             nb = c + (1 + factor) * (b - c)
             if abs(na-nb) > 50:
@@ -299,9 +299,6 @@ class cAudioWidget(Gtk.EventBox):
         self.queue_draw()
 
     def on_scroll(self, widget, event):
-        #print "Direction up=", event.direction == Gdk.ScrollDirection.UP
-        #print "Stuck keys? CTRL, SHIFT", event.state & Gdk.ModifierType.CONTROL_MASK, event.state & Gdk.ModifierType.SHIFT_MASK
-        #print "X Coordinate", event.x
         if self.videoDuration == 0:
             return
 
@@ -317,7 +314,7 @@ class cAudioWidget(Gtk.EventBox):
             return
 
         self.calc_parameters()
-        moveval = 20*self.mspp
+        moveval = 25 * self.mspp
         if event.direction == Gdk.ScrollDirection.UP and self.highms < self.videoDuration + moveval:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
@@ -537,15 +534,20 @@ class cAudioWidget(Gtk.EventBox):
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
 
     def center_active_sub(self):
-        vpdiff = 0.017
+        vpdiff = 4.75
         low = int(self.activeSub.startTime)
         high = int(self.activeSub.stopTime)
+        msdur = ((high - low) * vpdiff) / 2
+        if msdur < 1000:
+            msdur = 1000
+        low -= msdur
+        high += msdur
         if low < 0:
             low = 0
         if high > self.videoDuration:
             high = self.videoDuration
-        self.viewportLower = (low / float(self.videoDuration)) * (1-vpdiff)
-        self.viewportUpper = (high / float(self.videoDuration)) * (1+vpdiff)
+        self.viewportLower = (low / float(self.videoDuration))
+        self.viewportUpper = (high / float(self.videoDuration))
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()

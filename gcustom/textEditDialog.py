@@ -15,11 +15,6 @@ from sites.UrbanDictionary import meaning as UDMeaning
 from sites.TheFreeDictionary import meaning as TFDMeaning
 from gcustom.textResultWin import cTextResultWin
 
-#if platform.system() == 'Windows':
-#    import customspell as GtkSpell
-#else:
-#    gi.require_version('GtkSpell', '3.0')
-#    from gi.repository import GtkSpell
 import customspell as GtkSpell
 
 def custom_insert_markup(buff,  markup):
@@ -94,7 +89,7 @@ class cTextEditDialog(Gtk.Dialog):
         self.char_count.set_property('width-request', 30)
         self.char_count.set_sensitive(False)
         self.thesaurus = thesaurus
-        
+
         self.hbox = Gtk.HBox(spacing = 1)
         self.text_view_box = Gtk.VBox(spacing = 1)
         self.text_view = Gtk.TextView()
@@ -208,13 +203,21 @@ class cTextEditDialog(Gtk.Dialog):
             TranslationMenu.add(mUDMeaning)
             popup.insert(Gtk.SeparatorMenuItem(), 0)
             popup.insert(TranslationSubMenuItem, 0)
+            stm_italics = Gtk.MenuItem('Italics')
+            stm_bold = Gtk.MenuItem('Bold')
+            popup.insert(Gtk.SeparatorMenuItem(), 0)
+            popup.insert(stm_italics, 0)
+            popup.insert(stm_bold, 0)
+            popup.insert(Gtk.SeparatorMenuItem(), 0)
             mGTrans.connect('activate', self.trans_activated, 'GTrans', self.text_view)
             mWRTrans.connect('activate', self.trans_activated, 'WRTrans', self.text_view)
             mUDMeaning.connect('activate', self.trans_activated, 'UDMeaning', self.text_view)
             mTFDMeaning.connect('activate', self.trans_activated, 'TFDMeaning', self.text_view)
+            stm_italics.connect('activate', self.italics_activated, self.text_view)
+            stm_bold.connect('activate', self.bold_activated, self.text_view)
             popup.show_all()
         # Add Synonyms Menu
-        iter = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)
+        iter = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)[1]
         p1 = iter.copy()
         p2 = iter.copy()
         p1.backward_word_start()
@@ -237,12 +240,24 @@ class cTextEditDialog(Gtk.Dialog):
             item.connect('activate', self.on_thesaurus_activated,  p1,  p2)
         popup.show_all()
 
+    def italics_activated(self, sender, textview):
+        event = Gdk.Event.new(Gdk.EventType.KEY_RELEASE)
+        event.keyval = Gdk.KEY_i
+        event.state = Gdk.ModifierType.CONTROL_MASK
+        textview.emit('key-release-event', event)
+
+    def bold_activated(self, sender, textview):
+        event = Gdk.Event.new(Gdk.EventType.KEY_RELEASE)
+        event.keyval = Gdk.KEY_B
+        event.state = Gdk.ModifierType.CONTROL_MASK
+        textview.emit('key-release-event', event)
+
     def on_thesaurus_activated(self, sender,  p1,  p2):
         word = sender.get_label()
         self.text_view.get_buffer().delete(p1, p2)
         self.text_view.get_buffer().insert(p1, word, -1)
         self.history.update()
-    
+
     def get_selected_text(self, textview):
         if not textview.get_buffer().get_has_selection():
             return ''
@@ -333,6 +348,29 @@ class cTextEditDialog(Gtk.Dialog):
                 elif not isOpen:
                     if insertIter.compare(itStopIter[1]) >= 0:
                         buffer.insert(insertIter, "<i>")
+
+        if  (event.keyval in [Gdk.KEY_b, Gdk.KEY_B, 1986, 2018]) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            if buffer.get_has_selection():
+                iter1 = buffer.get_selection_bounds()[0]
+                buffer.insert(iter1, "<b>")
+                iter2 = buffer.get_selection_bounds()[1]
+                buffer.insert(iter2, "</b>")
+                buffer.select_range(iter2,iter2)
+            else:
+                insertIter = buffer.get_iter_at_mark(buffer.get_insert())
+                itStartIter = insertIter.backward_search("<b>", 0, None)
+                if itStartIter != None:
+                    itStopIter = itStartIter[1].forward_search("</b>", 0, None)
+                else:
+                    itStopIter = None
+                isOpen = itStartIter != None and (itStopIter == None)
+                if itStartIter == None:
+                    buffer.insert(insertIter, "<b>")
+                elif isOpen:
+                    buffer.insert(insertIter, "</b>")
+                elif not isOpen:
+                    if insertIter.compare(itStopIter[1]) >= 0:
+                        buffer.insert(insertIter, "<b>")
 
         if  event.keyval == Gdk.KEY_Return and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.response(Gtk.ResponseType.OK)

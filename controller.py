@@ -999,6 +999,11 @@ class Controller:
         self.view['audio'].viewportUpper = (posValue + abs(upper - lower)) / 100.0
         self.view['audio'].queue_draw()
 
+    def crash_save(self):
+        if self.model.subFilename == '' :
+            return
+        srtFile(self.model.subFilename+'_crash').write_to_file(self.model.subtitles.get_model(), encoding = self.preferences['Encoding'])
+
     def on_save_button_clicked(self, widget):
         if self.model.subFilename == "":
             return
