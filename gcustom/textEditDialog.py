@@ -393,7 +393,7 @@ class cTextEditDialog(Gtk.Dialog):
         lines = self.text_view.get_buffer().get_text(self.text_view.get_buffer().get_start_iter(), self.text_view.get_buffer().get_end_iter(), False)
         tmptext = lines
         lines = lines.split('\n')
-        tmp = '\n'.join(map(lambda i: str(len(i.decode("utf-8").replace('<i>','').replace('</i>',''))), lines))
+        tmp = '\n'.join(map(lambda i: str(len(i.decode("utf-8").replace('<i>','').replace('</i>','').replace('<b>','').replace('</b>',''))), lines))
         self.char_count.get_buffer().set_text(tmp)
         self.sub.text = tmptext.decode('utf-8')
         self.rs_value_label.set_markup(self.sub.rs_str)
