@@ -1086,6 +1086,17 @@ class Controller:
             self.view['audio'].viewportUpper = pos + vdiff * 0.90
             self.view['audio'].queue_draw()
 
+        # Activate subtitles under video position, blocking centering signals
+        overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
+        if overSub != None and overSub != self.view['audio'].activeSub:
+            path = self.model.subtitles.get_sub_path(overSub)
+            if path != None:
+                with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
+                    self.view['subtitles'].set_cursor(path)
+            
+
+        
+
     def check_video_file_compatibility(self, filename):
         if platform.system() != 'Windows':
             return filename
