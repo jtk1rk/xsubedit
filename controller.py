@@ -848,6 +848,8 @@ class Controller:
     def on_tv_button_press(self, widget, event):
         if event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             res = self.view['subtitles'].get_path_at_pos(event.x, event.y)
+            if res is None:
+                return
             if self.view['subtitles'].get_column(8) == res[1]:
                 sub = self.model.subtitles.get_sub_from_path(res[0])
                 dialog = cTextEditDialog(self.view, sub, 'info', self.view['subtitles'].thesaurus)
@@ -868,6 +870,8 @@ class Controller:
 
         if event.button == 3:
             res = self.view['subtitles'].get_path_at_pos(event.x, event.y)
+            if res is None:
+                return
             if res[1] in [self.view['subtitles'].get_column(1), self.view['subtitles'].get_column(2), self.view['subtitles'].get_column(3)]:
                 self.view['TVCM-DurationEdit'].show()
                 self.view['TVCM-TimeEditDialog'].show()

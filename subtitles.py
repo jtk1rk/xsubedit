@@ -425,6 +425,8 @@ class Subtitles(GObject.GObject):
         self.insert_sub(sub)
 
     def get_sub_from_path(self,path):
+        if len(self.subs) == 0:
+            return None
         return self.subs[path][self.COL_SUB]
 
     def get_sub(self, idx):

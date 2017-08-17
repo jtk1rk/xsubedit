@@ -100,6 +100,8 @@ class cAudioWidget(Gtk.EventBox):
         self.connect('motion-notify-event', self.on_motion_notify)
 
     def on_button_press(self, widget, event):
+        if self.videoDuration == 0:
+            return
         self.mouse_click_coords = (event.x, event.y)
         self.mouse_last_click_coords = self.mouse_click_coords
         self.mouse_last_event = event
