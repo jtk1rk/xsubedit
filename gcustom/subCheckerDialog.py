@@ -34,6 +34,8 @@ class cSubCheckerDialog(Gtk.Window):
             return
         self.show()
         self.process_messages()
+        for sub in self.subList:
+            sub.info = {}
         # Iterate through all subtitles
         # and perform checks
         for i in xrange(len(self.subList)):
@@ -70,7 +72,7 @@ class cSubCheckerDialog(Gtk.Window):
 
         self.show()
         self.process_messages()
-        
+
         self.set_progress(0)
         self.subChecker.check_time_gap()
         self.set_progress(1/9.0)

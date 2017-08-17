@@ -353,6 +353,9 @@ class Controller:
             self.view['audio'].activeSub = self.model.subtitles.get_sub_from_path(self.view['subtitles'].get_cursor()[0])
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
             self.view['audio'].center_active_sub()
+            self.model.video.pause()
+            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.set_segment(self.view['audio'].videoSegment)
 
     def on_video_realize(self, widget):
         video = widget.get_property('window')
@@ -539,7 +542,7 @@ class Controller:
             self.view['audio'].queue_draw()
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
-        elif event.keyval == Gdk.KEY_F12:
+        elif event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
             if self.view['audio'].videoDuration == 0:
                 return
             if self.model.video.is_playing():
@@ -592,7 +595,7 @@ class Controller:
             self.on_save_button_clicked(None)
         elif (event.keyval == Gdk.KEY_N or event.keyval == Gdk.KEY_n) and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.on_new_button_clicked(None)
-        elif (event.keyval in [Gdk.KEY_F, Gdk.KEY_f, 2038, 2006]):
+        elif (event.keyval in [Gdk.KEY_F, Gdk.KEY_f, 2038, 2006]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             if self.model.subtitles.is_empty():
                 return
             cSearchReplaceDialog(self.view, self.view['subtitles'], self.model.subtitles, self.history)
@@ -851,6 +854,8 @@ class Controller:
                 response = dialog.run()
                 if response == Gtk.ResponseType.OK:
                     self.history.add(('edit-text', sub, sub.text, dialog.text))
+                    if sub.text != dialog.text:
+                        sub.info = {}
                     sub.text = dialog.text
                     self.view['audio'].invalidateCanvas()
                     self.view['audio'].queue_draw()

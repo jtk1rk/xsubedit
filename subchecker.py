@@ -109,6 +109,8 @@ class cSubChecker(object):
             curSub.info = ('Audio-Error-RS', '')
         if int(curSub.duration) < 1000:
             curSub.info = ('Audio-Error-Duration', (u'<span foreground="red">Διάρκεια &lt; 1 δευτερόλεπτο</span>', []))
+        elif int(curSub.duration) > 6000:
+            curSub.info = ('Audio-Error-Duration', (u'<span foreground="red">Διάρκεια &gt; 6 δευτερόλεπτα</span>', []))
         else:
             curSub.info = ('Audio-Error-Duration', '')
 

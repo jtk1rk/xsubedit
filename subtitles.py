@@ -216,6 +216,11 @@ class subRec(GObject.GObject):
 
     @info.setter
     def info(self, value):
+        if value == {}:
+            self.__info_text_str = ''
+            self.__info_audio_str = ''
+            self.__info = {}
+            return
         if not self.__info.has_key(value[0]) or self.__info[value[0]] != value[1]:
             if value[1] == '': 
                 if self.__info.has_key(value[0]):

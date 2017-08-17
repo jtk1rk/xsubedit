@@ -6,10 +6,7 @@ mkdir ~/xsubedit.gen
 cd ~/xsubedit.gen
 cp -r ~/git/xsubedit/* ~/xsubedit.gen
 cd ~/xsubedit.gen
-zip -r xsubedit.zip *
-echo '#!/usr/bin/env python2' > xsubedit
-cat xsubedit.zip >> xsubedit
-chmod +x xsubedit
+rm -rf ~/xsubedit.gen/scripts
 
 mkdir -p ~/$targetdir
 cd ~/$targetdir
@@ -36,8 +33,18 @@ cp ~/xsubedit.gen/share/xsubedit-48.png ~/$targetdir/usr/share/icons/hicolor/48x
 cp ~/xsubedit.gen/share/xsubedit-64.png ~/$targetdir/usr/share/icons/hicolor/64x64/apps/xsubedit.png
 cp ~/xsubedit.gen/share/xsubedit-128.png ~/$targetdir/usr/share/icons/hicolor/128x128/apps/xsubedit.png
 cp ~/xsubedit.gen/share/xsubedit-256.png ~/$targetdir/usr/share/icons/hicolor/256x256/apps/xsubedit.png
-cp ~/xsubedit.gen/xsubedit ~/$targetdir/usr/bin
 cp ~/xsubedit.gen/thesaurus.pz ~/$targetdir/usr/share/xsubedit
+
+rm -rf ~/xsubedit.gen/share
+rm ~/xsubedit.gen/thesaurus.pz
+
+cd ~/xsubedit.gen
+zip -r xsubedit.zip *
+echo '#!/usr/bin/env python2' > xsubedit
+cat xsubedit.zip >> xsubedit
+chmod +x xsubedit
+
+cp ~/xsubedit.gen/xsubedit ~/$targetdir/usr/bin
 
 echo "Package: xSubEdit
 Version: $ver
@@ -46,9 +53,9 @@ Maintainer: James T. Kirk
 Depends: python2.7, python-enchant, python-numpy, gir1.2-gtkspell3-3.0, python-regex, mediainfo, ffmpeg, myspell-el-gr, gstreamer1.0-alsa, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly, gstreamer1.0-tools, gstreamer1.0-libav, python-appdirs, python-requests, python-bs4, gir1.2-gstreamer-1.0, gir1.2-gst-plugins-base-1.0, python-gi-cairo
 Homepage: http://xsubedit.blogspot.gr
 Description: Greek Subtitle Editor
- xSubEdit is a subtitle editor made specifically for translating / creating subtitles to Greek language.
- With minor changes it can be made to work for any language.
- This program is intented to be used by the xsubs.tv group." >> ~/$targetdir/DEBIAN/control
+ xSubEdit is a subtitle editor made specifically for creating/translating subtitles into the Greek language.
+ With minor modifications it can be made to work for any language.
+ This program is intended to be used by the xsubs.tv group." >> ~/$targetdir/DEBIAN/control
 
 chmod +x ~/$targetdir/DEBIAN/control
 
