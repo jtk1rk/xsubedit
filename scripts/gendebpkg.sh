@@ -2,9 +2,7 @@ ver=$(cat ~/git/xsubedit/__main__.py | grep xSubEdit | sed 's/.*Edit //' | sed '
 targetdir=$(echo -n xSubEdit_$ver-pepper)
 
 rm -rf ~/xsubedit.gen
-mkdir ~/xsubedit.gen
-cd ~/xsubedit.gen
-cp -r ~/git/xsubedit/* ~/xsubedit.gen
+git clone http://github.com/jtk1rk/xsubedit.git ~/xsubedit.gen
 cd ~/xsubedit.gen
 rm -rf ~/xsubedit.gen/scripts
 
