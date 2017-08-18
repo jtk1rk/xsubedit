@@ -378,7 +378,7 @@ class Subtitles(GObject.GObject):
                 break
         return res 
 
-    def inside_sub(self, msec):
+    def inside_sub_old(self, msec):
         # allagh me bisect sto search
         tmpSub = None
         for item in self.subs:
@@ -386,6 +386,11 @@ class Subtitles(GObject.GObject):
                 tmpSub = item[self.COL_SUB]
                 break
         return tmpSub
+
+    def inside_sub(self, msec):
+        idx = utils.bisect(self.subs, lambda x: x[self.COL_SUB].startTime, msec)
+        sub = self.subs[idx][self.COL_SUB]
+        return sub if sub.startTime <= msec <= sub.stopTime else None
 
     def get_sub_before_timeStamp(self, timeStamp):
         #bisect

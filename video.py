@@ -99,7 +99,7 @@ class Video(GObject.GObject):
         if self.play_update_handle:
             GObject.source_remove(self.play_update_handle)
             self.play_update_handle = None
-        self.play_update_handle = GObject.timeout_add(50, self.position_update)
+        self.play_update_handle = GObject.timeout_add(75, self.position_update)
 
     def is_playing(self):
         return self.playbin.get_state(0)[1] == Gst.State.PLAYING

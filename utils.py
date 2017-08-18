@@ -155,3 +155,16 @@ def grad(A0, B0, A, B, x):
     if A0 == B0:
         raise ValueError('ValueError: Division By Zero')
     return ( (A - B) / float(A0 - B0) ) * (x - B0) + B
+
+def bisect(clist, key, value):
+    """ Example: bisect(objectlist, lambda x: x.value, value) """
+    a = 0
+    b = len(clist) - 1
+    c = (a+b) // 2 
+    while b-a > 1:
+        if value > key(clist[c]):
+            a = c
+        else:
+            b = c
+        c = (a+b) // 2
+    return a
