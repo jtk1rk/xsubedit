@@ -619,7 +619,7 @@ class Controller:
             else:
                 pointx = int(((cr - audio.lowms) / float(audio.highms - audio.lowms)) * audio.get_allocation().width)
             audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
-        elif (event.keyval  == Gdk.KEY_DELETE):
+        elif (event.keyval  == Gdk.KEY_Delete):
             self.on_TVCM_Delete(None)
 
 
