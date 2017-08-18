@@ -1,0 +1,84 @@
+#sudo apt-get update
+#sudo apt-get -y install python-virtualenv
+
+rm -rf ~/.xsubedit
+
+mkdir -p ~/.xsubedit
+git clone http://github.com/jtk1rk/xsubedit.git ~/.xsubedit/xsubedit
+mv ~/.xsubedit/xsubedit/thesaurus.pz ~/.xsubedit
+rm -rf ~/.xsubedit/xsubedit/scripts
+mv ~/.xsubedit/xsubedit/share/xsubedit-256.png ~/.xsubedit/icon.png
+rm -rf ~/.xsubedit/xsubedit/share
+
+echo '#!/usr/bin/env python2' > ~/.xsubedit/xsubedit.run
+
+cd ~/.xsubedit/xsubedit
+zip -r tmp.zip *
+cat ~/.xsubedit/xsubedit/tmp.zip >> ~/.xsubedit/xsubedit.run
+chmod +x ~/.xsubedit/xsubedit.run
+rm -rf ~/.xsubedit/xsubedit
+
+cd ~/.xsubedit
+
+
+
+wget -q https://github.com/probonopd/AppImages/raw/master/functions.sh -O ./functions.sh
+. ./functions.sh
+
+APP=xsubedit
+LOWERAPP=${APP,,} 
+mkdir -p $APP/$APP.AppDir/
+cd $APP/
+cd $APP.AppDir/
+
+virtualenv2 usr
+
+# Install python dependencies into the virtualenv
+./usr/bin/pip install chardet
+./usr/bin/pip install numpy
+./usr/bin/pip install regex
+./usr/bin/pip install pyenchant
+./usr/bin/pip install appdirs
+./usr/bin/pip install requests
+./usr/bin/pip install bs4
+
+# The following ones cannot be installed using pip
+mkdir -p usr/share/pyshared/
+mkdir -p usr/lib/python2.7/site-packages
+cp -r /usr/lib/python2.7/site-packages/gi usr/lib/python2.7/site-packages/
+cp -r /usr/lib/python2.7/site-packages/gobject/ usr/lib/python2.7/site-packages/
+cp -r /usr/lib/python2.7/site-packages/glib/ usr/lib/python2.7/site-packages/
+cp -r /usr/lib/python2.7/site-packages/cairo/ usr/lib/python2.7/site-packages/
+
+mkdir -p usr/bin/
+mkdir -p usr/share/xsubedit
+cp ~/.xsubedit/thesaurus.pz usr/share/xsubedit/
+cp ~/.xsubedit/xsubedit.run usr/bin/$LOWERAPP
+chmod a+x usr/bin/$LOWERAPP
+
+get_apprun
+
+cat > $LOWERAPP.desktop <<EOF
+[Desktop Entry]
+Name=$APP
+Exec=$LOWERAPP
+Icon=$LOWERAPP
+Comment=A hello world app written in GTK3 and Python
+EOF
+
+cp ~/.xsubedit/icon.png $LOWERAPP.png
+
+
+copy_deps ; copy_deps ; copy_deps
+
+delete_blacklisted
+move_lib
+
+VERSION=1
+
+cd ..
+
+generate_appimage
+
+mv ~/.xsubedit/out/*.appImage ~/
+rm -rf ~/.xsubedit
