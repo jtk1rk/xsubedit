@@ -1088,13 +1088,21 @@ class Controller:
         vup = self.view['audio'].viewportUpper
         vlow = self.view['audio'].viewportLower
         vdiff = vup - vlow
-        if pos > vlow + vdiff * 0.98:
-            self.view['audio'].viewportLower = pos - vdiff * 0.10
-            self.view['audio'].viewportUpper = pos + vdiff * 0.90
+        if pos > vlow + vdiff * 0.98 and vup < 1:
+            if pos - vdiff * 0.90 < 1:
+                self.view['audio'].viewportLower = pos - vdiff * 0.10
+                self.view['audio'].viewportUpper = pos + vdiff * 0.90
+            else:
+                self.view['audio'].viewportUpper = 1
+                self.view['audio'].viewportLower = 1 - vdiff
             self.view['audio'].queue_draw()
         if pos < vlow:
-            self.view['audio'].viewportLower = pos - vdiff * 0.10
-            self.view['audio'].viewportUpper = pos + vdiff * 0.90
+            if pos - vdiff * 0.10 > 0:
+                self.view['audio'].viewportLower = pos - vdiff * 0.10
+                self.view['audio'].viewportUpper = pos + vdiff * 0.90
+            else:
+                self.view['audio'].viewportLower = 0
+                self.view['audio'].viewportUpper = vdiff
             self.view['audio'].queue_draw()
 
         # Activate subtitles under video position, blocking centering signals

@@ -706,7 +706,7 @@ class cAudioWidget(Gtk.EventBox):
 
         width = widget.get_allocation().width
         height = widget.get_allocation().height
-        
+
         # Draw Position
         viewportPos = (self.pos / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower)
         if 0 <= viewportPos <= 1:
