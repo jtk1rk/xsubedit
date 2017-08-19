@@ -1,0 +1,36 @@
+# Author : jtkirk <jtkirk@freemail.gr>
+# Maintainer: jtkirk <jtkirk@freemail.gr>
+
+pkgname=xsubedit
+pkgver=1.7.1
+pkgrel=1
+pkgdesc="Subtitle editor for xsubs.tv"
+url="http://xsubedit.blogspot.gr"
+arch=('any')
+license=('GPLv3+')
+depends=('binutils' 'wget' 'fakeroot' 'gcc' 'gtkspell3' 'python2-cairo' 'git' 'zip' 'python2' 'gst-libav' 'gst-plugins-bad' 'gst-plugins-good' 'gst-plugins-ugly' 'gst-plugins-base' 'gst-plugins-base-libs' 'gstreamer' 'python2-appdirs' 'gtk3' 'python2-gobject' 'python2-regex' 'python2-pyenchant' 'python2-numpy' 'ffmpeg' 'mediainfo' 'python2-chardet' 'aspell' 'aspell-el' 'python2-requests' 'python2-beautifulsoup4' 'python2-lxml')
+source=("git+https://github.com/jtk1rk/xsubedit.git")
+md5sums=('SKIP')
+
+build() {
+    cd "${srcdir}/${pkgname}"
+    mkdir build
+    cp *.py build/
+    cp -R gcustom build
+    cp -R sites build
+    cd build
+    zip -r xSubEdit.zip *
+    echo "#!/usr/bin/env python2" > xsubedit
+    cat xSubEdit.zip >> xsubedit
+}
+
+package() {
+    cd "${srcdir}/${pkgname}"
+    install -Dm644 share/xsubedit.desktop "$pkgdir/usr/share/applications/xsubedit.desktop"
+    for res in {16,22,24,32,48,64,128,256}
+    do
+     install -Dm644 share/xsubedit-$res.png "$pkgdir/usr/share/icons/hicolor/"$res"x"$res"/apps/xsubedit.png"
+    done
+    install -Dm755 build/xsubedit "$pkgdir/usr/bin/xsubedit"
+    install -Dm644 share/thesaurus.pz "$pkgdir/usr/share/${pkgname}/thesaurus.pz"
+}
