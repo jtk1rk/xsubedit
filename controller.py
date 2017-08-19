@@ -57,8 +57,8 @@ class Controller:
 
         # Load Thesaurus
         path = ''
-        if exists('thesaurus.pz'):
-            path = 'thesaurus.pz'
+        if exists('share/thesaurus.pz'):
+            path = 'share/thesaurus.pz'
         elif exists('/usr/share/xsubedit/thesaurus.pz'):
             path = '/usr/share/xsubedit/thesaurus.pz'
         elif exists('/usr/local/share/xsubedit/thesaurus.pz'):

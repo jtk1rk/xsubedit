@@ -5,7 +5,7 @@ rm -rf ~/.xsubedit
 
 mkdir -p ~/.xsubedit
 git clone http://github.com/jtk1rk/xsubedit.git ~/.xsubedit/xsubedit
-mv ~/.xsubedit/xsubedit/thesaurus.pz ~/.xsubedit
+mv ~/.xsubedit/xsubedit/share/thesaurus.pz ~/.xsubedit
 rm -rf ~/.xsubedit/xsubedit/scripts
 mv ~/.xsubedit/xsubedit/share/xsubedit-256.png ~/.xsubedit/icon.png
 rm -rf ~/.xsubedit/xsubedit/share

@@ -31,7 +31,7 @@ cp ~/xsubedit.gen/share/xsubedit-48.png ~/$targetdir/usr/share/icons/hicolor/48x
 cp ~/xsubedit.gen/share/xsubedit-64.png ~/$targetdir/usr/share/icons/hicolor/64x64/apps/xsubedit.png
 cp ~/xsubedit.gen/share/xsubedit-128.png ~/$targetdir/usr/share/icons/hicolor/128x128/apps/xsubedit.png
 cp ~/xsubedit.gen/share/xsubedit-256.png ~/$targetdir/usr/share/icons/hicolor/256x256/apps/xsubedit.png
-cp ~/xsubedit.gen/thesaurus.pz ~/$targetdir/usr/share/xsubedit
+cp ~/xsubedit.gen/share/thesaurus.pz ~/$targetdir/usr/share/xsubedit
 
 rm -rf ~/xsubedit.gen/share
 rm ~/xsubedit.gen/thesaurus.pz
