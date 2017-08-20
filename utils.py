@@ -167,4 +167,4 @@ def bisect(clist, key, value):
         else:
             b = c
         c = (a+b) // 2
-    return b if value >= b else a
+    return b if (key(clist[b]) <= value) else a

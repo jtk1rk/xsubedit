@@ -1079,8 +1079,8 @@ class Controller:
         self.view['position-label'].set_label('Position: '+ms2ts(int(self.model.video.get_videoDuration()*position/1000000.0))+' ')
 
         # Show Subtitle on Video
-        res = self.model.subtitles.inside_sub( int(self.model.video.get_videoDuration()*position/1000000.0) )
-        text = res.text if res != None else ''
+        overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
+        text = overSub.text if overSub != None else ''
         self.model.video.set_subtitle(text)
 
         # Follow video position in audioview
@@ -1105,10 +1105,9 @@ class Controller:
                 self.view['audio'].viewportUpper = vdiff
             self.view['audio'].queue_draw()
 
+        # Activate subtitles under video position, blocking centering signals
         if not self.model.video.is_playing():
             return
-        # Activate subtitles under video position, blocking centering signals
-        overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
         if overSub != None:
             path = self.model.subtitles.get_sub_path(overSub)
             if path != None:
