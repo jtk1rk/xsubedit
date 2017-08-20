@@ -160,11 +160,11 @@ def bisect(clist, key, value):
     """ Example: bisect(objectlist, lambda x: x.value, value) """
     a = 0
     b = len(clist) - 1
-    c = (a+b) // 2 
+    c = (a+b) // 2
     while b-a > 1:
         if value > key(clist[c]):
             a = c
         else:
             b = c
         c = (a+b) // 2
-    return a
+    return b if value >= b else a

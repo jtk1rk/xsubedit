@@ -1105,6 +1105,8 @@ class Controller:
                 self.view['audio'].viewportUpper = vdiff
             self.view['audio'].queue_draw()
 
+        if not self.model.video.is_playing():
+            return
         # Activate subtitles under video position, blocking centering signals
         overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
         if overSub != None:
