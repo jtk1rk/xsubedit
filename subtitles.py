@@ -119,6 +119,8 @@ class subRec(GObject.GObject):
 
     def __init__(self, startTime, stopTime, text):
         super(subRec, self).__init__()
+        # Cache
+        self.cache = {}
         # Internal Attributes
         self.__text = None
         self.__startTime = min(timeStamp(startTime), timeStamp(stopTime))
@@ -308,11 +310,16 @@ class subRec(GObject.GObject):
     def calc_char_count(self):
         if self.text == None or self.text == '':
             return [0]
+        if 'char-count-text' in self.cache and self.text == self.cache['char-count-text']:
+            self.char_count = self.cache['char-count-value']
+            return
         lines_length = []
         lines = self.text.splitlines()
         for line in lines:
-            lines_length.append(len(line.replace('<i>','').replace('</i>','').replace('<b>','').replace('</b>','')))
+            lines_length.append(len(utils.untagged_text(line)))
         self.char_count = lines_length
+        self.cache['char-count-text'] = self.text
+        self.cache['char-count-value'] = lines_length
 
     def calc_target_duration(self):
         duration = 1000

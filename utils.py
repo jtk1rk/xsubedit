@@ -6,7 +6,7 @@ import pickle
 import platform
 import time
 import itertools
-from mparser import MarkupParser
+from mparser import MarkupParser, Tag
 from mgen import MarkupGenerator
 
 RUN_TIMESTAMP = time.time()
@@ -173,6 +173,18 @@ def bisect(clist, key, value):
 
 def filter_markup(text):
     m = MarkupParser(text)
-    keeptags = [tag for tag in m.tags if tag.name.upper() in ['B','I']]
+    keeptags = []
+    for tag in m.tags:
+        if tag.name.upper() in ['B', 'I']:
+            keeptags.append(tag)
+        if tag.name.upper() == 'FONT' and 'COLOR' in [attr.upper() for attr in tag.attributes]:
+            keeptags.append(Tag('span', tag.start, tag.stop, {'foreground': tag.attributes['color']}))
     g = MarkupGenerator(m.text, keeptags)
     return g.markup
+
+def untagged_text(text):
+    try:
+        m = MarkupParser(text)
+    except:
+        return text
+    return m.text

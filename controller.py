@@ -93,6 +93,7 @@ class Controller:
         view['ACM-CreateHere'].connect('activate', self.on_ACM_CreateHere)
         view['ACM-DeleteSub'].connect('activate', self.on_ACM_DeleteSub)
         view['ACM-SplitHere'].connect('activate', self.on_ACM_SplitHere)
+        view['ACM-StickZoom'].connect('toggled', self.on_ACM_StickZoom)
         view['ACM-ResetAudioScale'].connect('activate', self.on_ACM_ResetAudioScale)
         view['subtitles'].connect('button-press-event', self.on_tv_button_press)
         view['subtitles'].connect('button-release-event', self.on_tv_button_release)
@@ -313,6 +314,9 @@ class Controller:
             return
         with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
             self.view['subtitles'].set_cursor(path)
+
+    def on_ACM_StickZoom(self, widget):
+        self.view['audio'].stickZoom = widget.get_active()
 
     def on_ACM_ResetAudioScale(self, widget):
         self.view['audio'].scale_linear_audio = 1

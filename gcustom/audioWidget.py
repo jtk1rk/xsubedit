@@ -90,6 +90,7 @@ class cAudioWidget(Gtk.EventBox):
         self.audioData = None
         self.videoSegment = None
         self.voModel = None
+        self.stickZoom = False
 
         # Connections
         self.drawingArea.connect('draw', self.on_draw)
@@ -270,6 +271,8 @@ class cAudioWidget(Gtk.EventBox):
                 self.overHandle = None
 
     def zoom(self, direction, xcoord):
+        if self.stickZoom:
+            return
         if self.videoDuration == 0:
             return
 
@@ -315,7 +318,7 @@ class cAudioWidget(Gtk.EventBox):
             self.zoom(event.direction, event.x)
             return
 
-        self.calc_parameters()
+        self.calc_parameters() # needed here?
         moveval = 25 * self.mspp
         if event.direction == Gdk.ScrollDirection.DOWN and self.highms < self.videoDuration + moveval:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
@@ -536,20 +539,34 @@ class cAudioWidget(Gtk.EventBox):
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
 
     def center_active_sub(self):
-        vpdiff = 1
         low = int(self.activeSub.startTime)
         high = int(self.activeSub.stopTime)
-        msdur = ((high - low) * vpdiff) / 2
-        if msdur < 1000:
-            msdur = 1000
-        low -= msdur
-        high += msdur
-        if low < 0:
-            low = 0
-        if high > self.videoDuration:
-            high = self.videoDuration
-        self.viewportLower = (low / float(self.videoDuration))
-        self.viewportUpper = (high / float(self.videoDuration))
+        msdur = (high - low) / 2
+        if self.stickZoom:
+            vpwidthms = (self.viewportUpper - self.viewportLower) * float(self.videoDuration)
+            centerms = (low + msdur)
+            lms = (centerms - (vpwidthms / 2))
+            ums = (centerms + (vpwidthms / 2))
+            if lms < 0:
+                ums += abs(lms)
+                lms = 0
+            elif ums > self.videoDuration:
+                lms -= ums - self.videoDuration
+                ums = self.videoDuration
+            self.viewportLower = lms / float(self.videoDuration)
+            self.viewportUpper = ums / float(self.videoDuration)
+        else:
+            if msdur < 1000:
+                msdur = 1000
+            low -= msdur
+            high += msdur
+            if low < 0:
+                low = 0
+            if high > self.videoDuration:
+                high = self.videoDuration
+            self.viewportLower = (low / float(self.videoDuration))
+            self.viewportUpper = (high / float(self.videoDuration))
+
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()
