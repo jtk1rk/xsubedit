@@ -479,7 +479,7 @@ class Subtitles(GObject.GObject):
         self.subs.set_value(listIter, self.COL_SUB_START_TIME, '<span foreground="#4ccc4ccc4ccc">'+str(sub.startTime)+'</span>')
         self.subs.set_value(listIter, self.COL_SUB_STOP_TIME, '<span foreground="#4ccc4ccc4ccc">'+str(sub.stopTime)+'</span>')
         self.subs.set_value(listIter, self.COL_SUB_DURATION, sub.duration_str)
-        self.subs.set_value(listIter, self.COL_SUB_REFERENCE, sub.vo)
+        self.subs.set_value(listIter, self.COL_SUB_REFERENCE, utils.filter_markup(sub.vo))
         self.subs.set_value(listIter, self.COL_SUB_CHAR_COUNT, sub.char_count_str)
         self.subs.set_value(listIter, self.COL_SUB_RS, sub.rs_str)
         self.subs.set_value(listIter, self.COL_SUB_TEXT, utils.filter_markup(sub.text))
@@ -575,7 +575,7 @@ class Subtitles(GObject.GObject):
         elif attr == 'duration':
             self.subs[path][self.COL_SUB_DURATION] = sub.duration_str
         elif attr == 'vo':
-            self.subs[path][self.COL_SUB_REFERENCE] = sub.vo
+            self.subs[path][self.COL_SUB_REFERENCE] = utils.filter_markup(sub.vo)
         elif attr == 'char_count':
             self.subs[path][self.COL_SUB_CHAR_COUNT] = sub.char_count_str
         elif attr == 'rs':
