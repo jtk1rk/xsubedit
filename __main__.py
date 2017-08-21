@@ -12,7 +12,7 @@ import sys
 
 try:
     GObject.threads_init()
-    win = Controller(Model(), View('xSubEdit 1.7.4'))
+    win = Controller(Model(), View('xSubEdit 1.7.5'))
     Gtk.main()
 except:
     win.crash_save()
