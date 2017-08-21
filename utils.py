@@ -6,6 +6,8 @@ import pickle
 import platform
 import time
 import itertools
+from mparser import MarkupParser
+from mgen import MarkupGenerator
 
 RUN_TIMESTAMP = time.time()
 UTF8_BOM = '\xef\xbb\xbf'
@@ -168,3 +170,9 @@ def bisect(clist, key, value):
             b = c
         c = (a+b) // 2
     return b if (key(clist[b]) <= value) else a
+
+def filter_markup(text):
+    m = MarkupParser(text)
+    keeptags = [tag for tag in m.tags if tag.name.upper() in ['B','I']]
+    g = MarkupGenerator(m.text, keeptags)
+    return g.markup

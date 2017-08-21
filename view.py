@@ -128,6 +128,8 @@ class View(Gtk.Window):
         # Containers
         self.widgets["root-paned-container"] = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         self.widgets["audio-video-container"] = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.widgets["audio-video-container"].override_background_color(Gtk.StateType.NORMAL, black)
+
         self.widgets["toolbar-subtitles-container"] = Gtk.VBox()
         self.widgets["audio-scale-container"] = Gtk.VBox()
         self.widgets["toolbar-reports-container"] = Gtk.HBox()

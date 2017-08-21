@@ -475,7 +475,7 @@ class Subtitles(GObject.GObject):
         self.subs.set_value(listIter, self.COL_SUB_REFERENCE, sub.vo)
         self.subs.set_value(listIter, self.COL_SUB_CHAR_COUNT, sub.char_count_str)
         self.subs.set_value(listIter, self.COL_SUB_RS, sub.rs_str)
-        self.subs.set_value(listIter, self.COL_SUB_TEXT, sub.text)
+        self.subs.set_value(listIter, self.COL_SUB_TEXT, utils.filter_markup(sub.text))
         self.subs.set_value(listIter, self.COL_SUB_INFO, sub.info_audio_str)
         self.sub_connections[sub] = sub.connect('updated', self.on_sub_update)
         if idx != len(self.subs) - 1:
@@ -574,7 +574,7 @@ class Subtitles(GObject.GObject):
         elif attr == 'rs':
             self.subs[path][self.COL_SUB_RS] = sub.rs_str
         elif attr == 'text':
-            self.subs[path][self.COL_SUB_TEXT] = sub.text
+            self.subs[path][self.COL_SUB_TEXT] = utils.filter_markup(sub.text)
             self.last_edited = sub
         elif attr == 'info':
             self.subs[path][self.COL_SUB_INFO] = sub.info_audio_str

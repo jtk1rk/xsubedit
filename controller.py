@@ -26,7 +26,7 @@ from os.path import splitext, exists, split, normpath, join
 from shutil import copy as copyfile
 from os import rename, remove, makedirs, errno
 from history import cHistory
-from utils import cPreferences, get_rel_path, do_all, DIR_DELIMITER
+from utils import cPreferences, get_rel_path, do_all, DIR_DELIMITER, filter_markup
 from cmediainfo import cMediaInfo
 import ctypes, platform
 import pickle
@@ -48,6 +48,8 @@ class Controller:
         view['redoTB'].set_sensitive(False)
 
         self.history = cHistory()
+
+        self.videoWidgetIsSet = False
 
         try:
             makedirs(appdirs.user_config_dir('xSubEdit', 'jtapps'))
@@ -76,6 +78,7 @@ class Controller:
 
         # Connections
         model.video.playbus.connect('message::eos', self.on_video_finish)
+        view.connect('realize', self.on_realized)
         view.connect('delete-event', self.on_quit)
         view.connect('check-resize', self.on_mainwindow_resize)
         view['audio'].connect('right-click', self.on_audio_right_click)
@@ -113,7 +116,6 @@ class Controller:
         view['preferencesTB'].connect('clicked', self.preferences_clicked)
         view['projectSettingsTB'].connect('clicked', self.on_project_settings_clicked)
         view['audio'].connect('viewpos-update', self.on_audio_pos)
-        view['video'].connect('realize', self.on_video_realize)
         self.history.connect('history-update',  self.on_history_update)
 
         model.connect('audio-ready', self.on_audio_ready)
@@ -197,7 +199,12 @@ class Controller:
             self.view.audioViewSize = self.preferences['audioViewSize']
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+
         self.init_done = True
+
+    def on_realized(self, widget):
+        bg = widget.get_style_context().get_background_color(Gtk.StateType.NORMAL)
+        self.view['scale'].override_background_color(Gtk.StateType.NORMAL, bg)
 
     def on_audio_handle_double_click(self, sender, sub, old_st):
         self.history.add(('edit-stopTime', sub, old_st, int(sub.stopTime)))
@@ -357,7 +364,11 @@ class Controller:
             self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             self.model.video.set_segment(self.view['audio'].videoSegment)
 
-    def on_video_realize(self, widget):
+    def set_video_widget(self):
+        if self.videoWidgetIsSet :
+            return
+        self.videoWidgetIsSet = True
+        widget = self.view['video']
         video = widget.get_property('window')
         if platform.system() == 'Windows':
             if not video.ensure_native():
@@ -369,7 +380,7 @@ class Controller:
             widget._xid = gdkdll.gdk_win32_window_get_handle(drawingarea_gpointer)
         else:
             widget._xid = widget.get_property('window').get_xid()
-        self.model.video.set_video_widget(self.view['video'])
+        self.model.video.set_video_widget(widget)
 
     def on_sub_buffer_changed(self, sender):
         self.view['audio'].invalidateCanvas()
@@ -624,6 +635,7 @@ class Controller:
 
 
     def on_new_button_clicked(self, widget):
+        self.set_video_widget()
         dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': ''})
         res = dialog.run()
         projectFiles = None
@@ -751,6 +763,7 @@ class Controller:
             self.view['audio'].queue_draw()
 
     def open_project(self, filename):
+        self.set_video_widget()
         self.preferences.update_mru(filename)
         self.preferences.save()
 
@@ -1081,7 +1094,7 @@ class Controller:
         # Show Subtitle on Video
         overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
         text = overSub.text if overSub != None else ''
-        self.model.video.set_subtitle(text)
+        self.model.video.set_subtitle(filter_markup(text))
 
         # Follow video position in audioview
         pos = self.view['audio'].pos / float(self.view['audio'].videoDuration)

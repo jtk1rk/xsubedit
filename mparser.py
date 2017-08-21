@@ -129,6 +129,14 @@ class Tag(object):
     def attributes(self, value):
         self.__attributes = value
 
+    @property
+    def start_str(self):
+        return '<%s %s>' % (self.name, ' '.join(['%s="%s"' % (a, self.attributes[a]) for a in self.attributes.keys()]))
+
+    @property
+    def stop_str(self):
+        return '</%s>' % self.name
+
 class MarkupParser:
     def __init__(self,  markup):
         self.markup_text = markup
@@ -139,7 +147,7 @@ class MarkupParser:
     def parse(self):
         markup_list= MarkupTagList()
         text = self.markup_text
-        
+
         res_text = ''
         char_pos = 0
 
