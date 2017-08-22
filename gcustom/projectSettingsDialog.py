@@ -9,6 +9,10 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.parent = parent
         self.set_transient_for(parent)
         self.set_resizable(False)
+        if project['projectFile'] == '':
+            self.use_vo = True
+        else:
+            self.use_vo = (project['voFile'] != '')
 
         hbox1 = Gtk.HBox(spacing=4)
         self.videoButton = Gtk.Button()
@@ -42,7 +46,11 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.voButton.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON))
         self.project_vo_filename_entry = Gtk.Entry()
         self.project_vo_filename_entry.props.width_request = 400
-        hbox4.pack_start(Gtk.Label("Project VO"), False, False, 0)
+        #hbox4.pack_start(Gtk.Label("Project VO"), False, False, 0)
+        voCheckButton = Gtk.CheckButton('Project VO')
+        voCheckButton.set_active(self.use_vo)
+        voCheckButton.connect('toggled', self.on_vo_toggled)
+        hbox4.pack_start(voCheckButton, False, False, 0)
         hbox4.pack_end(self.voButton, False, False, 0)
         hbox4.pack_end(self.project_vo_filename_entry, False, True, 0)
 
@@ -68,6 +76,12 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.project = project.copy()
         self.vbox.show_all()
         self.set_default_response(Gtk.ResponseType.OK)
+        self.on_vo_toggled(voCheckButton)
+
+    def on_vo_toggled(self, widget):
+        self.use_vo = widget.get_active()
+        self.project_vo_filename_entry.set_sensitive(self.use_vo)
+        self.voButton.set_sensitive(self.use_vo)
 
     def on_voButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Subtitle", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))
@@ -142,7 +156,8 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.project['projectFile'] = splitext(filename)[0]+'.prj'
         self.project_filename_entry.set_text(self.project['projectFile'])
         self.project['voFile'] = splitext(filename)[0]+'-vo'+'.srt'
-        self.project_vo_filename_entry.set_text(self.project['voFile'])
+        if self.use_vo:
+            self.project_vo_filename_entry.set_text(self.project['voFile'])
 
     def on_projectButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Project", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))

@@ -710,12 +710,14 @@ class Controller:
         projectFiles = None
         if res == Gtk.ResponseType.OK:
             projectFiles = dialog.project.copy()
+            if not(dialog.use_vo):
+                projectFiles['voFile'] = ''
         dialog.destroy()
         if projectFiles != None:
             refpath = split(projectFiles['projectFile'])[0]
             projectFiles['videoFile'] = get_rel_path(refpath, projectFiles['videoFile'])
             projectFiles['subFile'] = get_rel_path(refpath, projectFiles['subFile'])
-            projectFiles['voFile'] = get_rel_path(refpath, projectFiles['voFile'])
+            projectFiles['voFile'] = get_rel_path(refpath, projectFiles['voFile']) if projectFiles['voFile'] != '' else ''
             projectFiles['peakFile'] = splitext(projectFiles['videoFile'])[0] + '.pkf'
             self.model.projectFilename = projectFiles['projectFile']
             self.view.set_title(splitext(projectFiles['videoFile'])[0])
@@ -727,7 +729,7 @@ class Controller:
             projectFiles['videoFile'] = normpath(join(refpath, projectFiles['videoFile']))
             projectFiles['peakFile'] = normpath(join(refpath, projectFiles['peakFile']))
             projectFiles['subFile'] = normpath(join(refpath, projectFiles['subFile']))
-            projectFiles['voFile'] = normpath(join(refpath, projectFiles['voFile']))
+            projectFiles['voFile'] = normpath(join(refpath, projectFiles['voFile'])) if projectFiles['voFile'] != '' else ''
             if projectFiles['videoFile'] != '':
                 self.model.video.set_video_filename(projectFiles['videoFile'])
             self.model.peakFilename = projectFiles['peakFile']
@@ -755,7 +757,7 @@ class Controller:
                 self.model.voReference.set_data(subs)
                 self.model.subtitles.load_vo_data(self.model.voReference)
             else:
-                if exists(projectFiles['subFile']):
+                if exists(projectFiles['subFile']) and projectFiles['voFile'] != '':
                     copyfile(projectFiles['subFile'], projectFiles['voFile'])
                     subs = srtFile(projectFiles['voFile']).read_from_file()
                     self.model.voReference.set_data(subs)
@@ -788,7 +790,7 @@ class Controller:
             self.autosaveHandle = GObject.timeout_add_seconds(60, self.autosave)
 
     def open_vo(self, filename):
-        if not exists(filename.decode('utf-8')):
+        if not exists(filename.decode('utf-8')) or filename == '':
             return
         self.model.voFilename = filename
         subs = srtFile(self.model.voFilename.decode('utf-8')).read_from_file()
@@ -814,21 +816,23 @@ class Controller:
         resData = None
         if res == Gtk.ResponseType.OK:
             resData = dialog.project.copy()
+            if not( dialog.use_vo ):
+                resData['voFile'] = ''
         dialog.destroy()
         if resData is None:
             return
         refpath = split(projectData['projectFile'])[0]
 
         if resData['voFile'] != projectData['voFile']:
-            projectData['voFile'] = get_rel_path(refpath, resData['voFile'])
+            projectData['voFile'] = get_rel_path(refpath, resData['voFile']) if resData['voFile'] != '' else ''
             pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
             self.open_vo(resData['voFile'])
         if resData['subFile'] != projectData['subFile']:
             projectData['subFile'] = get_rel_path(refpath, resData['subFile'])
-            projectData['voFile'] = get_rel_path(refpath, resData['voFile'])
+            projectData['voFile'] = get_rel_path(refpath, resData['voFile']) if resData['voFile'] != '' else ''
             pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
             self.open_srt(normpath(join(refpath, resData['subFile'])))
-            self.open_vo(normpath(join(refpath, resData['voFile'])))
+            self.open_vo(normpath(join(refpath, resData['voFile'])) if resData['voFile'] != '' else '' )
             self.view['audio'].queue_draw()
 
     def open_project(self, filename):
@@ -843,7 +847,7 @@ class Controller:
         self.model.video.set_video_filename(normpath(join(refpath, projectData['videoFile'])))
         self.model.peakFilename = normpath(join(refpath, projectData['peakFile']))
         self.model.subFilename = normpath(join(refpath, projectData['subFile']))
-        self.model.voFilename = normpath(join(refpath, projectData['voFile']))
+        self.model.voFilename = normpath(join(refpath, projectData['voFile'])) if projectData['voFile'] != '' else ''
 
         self.view.set_title(splitext(split(projectData['videoFile'])[1])[0] + ' - ' + self.view.prog_title)
 
