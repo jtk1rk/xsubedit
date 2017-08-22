@@ -115,6 +115,8 @@ def set_process_name():
 
 def get_rel_path(refpath, filename):
     tmpstr = ''
+    if filename == '':
+        return ''
     if platform.system() == 'Windows' and filename[1] != ':':
         tmpstr = abspath(filename)
         tmpstr = tmpstr[:2]

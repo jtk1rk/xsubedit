@@ -30,8 +30,8 @@ class TimedStatusBar(Gtk.Statusbar):
         self.set_timer()
 
 class View(Gtk.Window):
-    width = 1200
-    height = 800
+    width = 1024
+    height = 768
     audioViewSize = 0.8
     subtitlesViewSize = 0.7
     widgets = {}
@@ -111,6 +111,41 @@ class View(Gtk.Window):
         self.widgets["ACM-CreateHere"].show()
         self.widgets["ACM-DeleteSub"].show()
 
+        # Header Context Menu
+        self.widgets['HeaderContextMenu'] = Gtk.Menu()
+        self.widgets['HCM-N'] = Gtk.CheckMenuItem('N')
+        self.widgets['HCM-StartTime'] = Gtk.CheckMenuItem('StartTime')
+        self.widgets['HCM-StopTime'] = Gtk.CheckMenuItem('StopTime')
+        self.widgets['HCM-Duration'] = Gtk.CheckMenuItem('Duration')
+        self.widgets['HCM-Reference'] = Gtk.CheckMenuItem('Reference')
+        self.widgets['HCM-RS'] = Gtk.CheckMenuItem('RS')
+        self.widgets['HCM-Count'] = Gtk.CheckMenuItem('Count')
+        self.widgets['HCM-Info'] = Gtk.CheckMenuItem('Info')
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-N'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-StartTime'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-StopTime'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-Duration'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-Reference'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-RS'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-Count'])
+        self.widgets['HeaderContextMenu'].add(self.widgets['HCM-Info'])
+        self.widgets['HCM-N'].set_active(True)
+        self.widgets['HCM-StartTime'].set_active(True)
+        self.widgets['HCM-StopTime'].set_active(True)
+        self.widgets['HCM-Duration'].set_active(True)
+        self.widgets['HCM-Reference'].set_active(True)
+        self.widgets['HCM-RS'].set_active(True)
+        self.widgets['HCM-Count'].set_active(True)
+        self.widgets['HCM-Info'].set_active(True)
+        self.widgets['HCM-N'].show()
+        self.widgets['HCM-StartTime'].show()
+        self.widgets['HCM-StopTime'].show()
+        self.widgets['HCM-Duration'].show()
+        self.widgets['HCM-Reference'].show()
+        self.widgets['HCM-RS'].show()
+        self.widgets['HCM-Count'].show()
+        self.widgets['HCM-Info'].show()
+
         # TreeView Context Menu
         self.widgets["TVContextMenu"] = Gtk.Menu()
         self.widgets["TVCM-Delete"] = Gtk.MenuItem("Delete Subtitle(s)")
@@ -153,7 +188,7 @@ class View(Gtk.Window):
 
         self.widgets["toolbar-reports-container"].pack_start(self.widgets["toolbar"],True, True, 0)
         self.widgets["toolbar-reports-container"].pack_start(self.widgets["duration-label"], False, False, 0)
-        self.widgets["toolbar-reports-container"].pack_end(self.widgets["position-label"], False, False, 0)
+        self.widgets["toolbar-reports-container"].pack_end(self.widgets["position-label"], False, False, 50)
 
         self.widgets["toolbar-subtitles-container"].pack_start(self.widgets["toolbar-reports-container"], False, False, 0)
         self.widgets["vertical-sub-scrollable"].add(self.widgets["subtitles"])

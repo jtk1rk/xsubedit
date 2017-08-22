@@ -50,6 +50,7 @@ class Video(GObject.GObject):
         t = message.type
         if t == Gst.MessageType.EOS:
             self.pause()
+            self.position_update()
         elif t == Gst.MessageType.WARNING:
             err,  debug = message.parse_warning()
             print 'Error %s ' % err, debug

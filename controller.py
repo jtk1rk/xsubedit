@@ -33,6 +33,16 @@ import pickle
 import appdirs
 import sys
 
+def get_parent_button(widget):
+    res = widget
+    parent = widget
+    cnt = 0
+    while not (parent is None) and (parent.get_name() != 'GtkButton') and (cnt < 10):
+        widget = parent
+        parent = widget.get_parent()
+        cnt += 1
+    return parent if not (parent is None) and parent.get_name() == 'GtkButton' else None
+
 class Controller:
 
     resizeEventCounter = 0
@@ -147,6 +157,38 @@ class Controller:
         column6 = Gtk.TreeViewColumn('Count')
         column7 = Gtk.TreeViewColumn('Subtitle')
         column8 = Gtk.TreeViewColumn('Info')
+        column4.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        column7.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        column8.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        column4.set_expand(False)
+        column7.set_expand(False)
+        column8.set_expand(False)
+        column4.set_resizable(True)
+        column7.set_resizable(True)
+        column8.set_resizable(True)
+        column4.set_min_width(50)
+        column7.set_min_width(50)
+        column8.set_min_width(50)
+
+        view['HCM-N'].connect('toggled', self.on_HCM_toggled, column0)
+        view['HCM-StartTime'].connect('toggled', self.on_HCM_toggled, column1)
+        view['HCM-StopTime'].connect('toggled', self.on_HCM_toggled, column2)
+        view['HCM-Duration'].connect('toggled', self.on_HCM_toggled, column3)
+        view['HCM-Reference'].connect('toggled', self.on_HCM_toggled, column4)
+        view['HCM-RS'].connect('toggled', self.on_HCM_toggled, column5)
+        view['HCM-Count'].connect('toggled', self.on_HCM_toggled, column6)
+        view['HCM-Info'].connect('toggled', self.on_HCM_toggled, column8)
+
+        self.setup_tv_header(column0,'N')
+        self.setup_tv_header(column1,'Start Time')
+        self.setup_tv_header(column2,'Stop Time')
+        self.setup_tv_header(column3,'Duration')
+        self.setup_tv_header(column4,'Reference')
+        self.setup_tv_header(column5,'RS')
+        self.setup_tv_header(column6,'Count')
+        self.setup_tv_header(column7,'Subtitle')
+        self.setup_tv_header(column8,'Info')
+
         column0.pack_start(viewNumberCell, False)
         column1.pack_start(editTimeCell1, True)
         column2.pack_start(editTimeCell2, True)
@@ -203,6 +245,22 @@ class Controller:
 
         self.init_done = True
 
+    def on_HCM_toggled(self, widget, column):
+        column.props.visible = widget.get_active()
+
+    def setup_tv_header(self, column, text):
+        column.props.clickable = True
+        label = Gtk.Label(text)
+        label.show()
+        column.set_widget(label)
+        lb = get_parent_button(column.get_widget())
+        lb.connect('button-press-event', self.on_header_clicked)
+
+    def on_header_clicked(self, widget, event):
+        if event.button == 3:
+            self.view['HeaderContextMenu'].popup(None, None, None, None, event.button, event.time)
+        return True
+
     def on_realized(self, widget):
         bg = widget.get_style_context().get_background_color(Gtk.StateType.NORMAL)
         self.view['scale'].override_background_color(Gtk.StateType.NORMAL, bg)
@@ -256,6 +314,7 @@ class Controller:
         if self.view['audio'].videoDuration == 0:
             return
         dialog = Gtk.FileChooserDialog('Import SRT', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
+        dialog.set_current_folder(split(self.model.subFilename)[0])
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('SRT File')
@@ -544,7 +603,10 @@ class Controller:
                 posts = timeStamp(int(self.view['audio'].cursor))
                 prev = self.model.subtitles.get_sub_before_timeStamp(posts)
             else:
-                prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
+                if len(self.tvSelectionList) > 1:
+                    prev = self.model.subtitles.get_prev(self.tvSelectionList[0])
+                else:
+                    prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
             if prev == None:
                 return
             self.view['audio'].activeSub = prev
@@ -580,7 +642,10 @@ class Controller:
                 posts = timeStamp(int(self.view['audio'].cursor))
                 nexts = self.model.subtitles.get_sub_after_timeStamp(posts)
             else:
-                nexts = self.model.subtitles.get_next(self.view['audio'].activeSub)
+                if len(self.tvSelectionList) > 1:
+                    nexts = self.model.subtitles.get_next(self.tvSelectionList[-1])
+                else:
+                    nexts = self.model.subtitles.get_next(self.view['audio'].activeSub)
             if nexts == None:
                 return
             self.view['audio'].activeSub = nexts

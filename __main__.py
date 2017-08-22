@@ -10,10 +10,6 @@ import sys
 #from utils import set_process_name
 #set_process_name()
 
-try:
-    GObject.threads_init()
-    win = Controller(Model(), View('xSubEdit 1.7.5'))
-    Gtk.main()
-except:
-    win.crash_save()
-    sys.exit()
+GObject.threads_init()
+win = Controller(Model(), View('xSubEdit 1.7.6'))
+Gtk.main()
