@@ -41,7 +41,7 @@ def get_parent_button(widget):
         widget = parent
         parent = widget.get_parent()
         cnt += 1
-    return parent if not (parent is None) and parent.get_name() == 'GtkButton' else None
+    return parent if not (parent is None) and parent.get_name() == 'GtkButton' else widget
 
 class Controller:
 
@@ -107,6 +107,7 @@ class Controller:
         view['ACM-ResetAudioScale'].connect('activate', self.on_ACM_ResetAudioScale)
         view['subtitles'].connect('button-press-event', self.on_tv_button_press)
         view['subtitles'].connect('button-release-event', self.on_tv_button_release)
+        view['subtitles'].connect('realize', self.on_tv_realize)
         view['TVCM-Delete'].connect('activate', self.on_TVCM_Delete)
         view['TVCM-Merge'].connect('activate', self.on_TVCM_Merge)
         view['TVCM-Merge-To-Dialog'].connect('activate', self.on_TVCM_Merge)
@@ -179,15 +180,6 @@ class Controller:
         view['HCM-Count'].connect('toggled', self.on_HCM_toggled, column6)
         view['HCM-Info'].connect('toggled', self.on_HCM_toggled, column8)
 
-        self.setup_tv_header(column0,'N')
-        self.setup_tv_header(column1,'Start Time')
-        self.setup_tv_header(column2,'Stop Time')
-        self.setup_tv_header(column3,'Duration')
-        self.setup_tv_header(column4,'Reference')
-        self.setup_tv_header(column5,'RS')
-        self.setup_tv_header(column6,'Count')
-        self.setup_tv_header(column7,'Subtitle')
-        self.setup_tv_header(column8,'Info')
 
         column0.pack_start(viewNumberCell, False)
         column1.pack_start(editTimeCell1, True)
@@ -247,6 +239,18 @@ class Controller:
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()
+
+    def on_tv_realize(self, widget):
+        col = self.view['subtitles'].get_columns()
+        self.setup_tv_header(col[0],'N')
+        self.setup_tv_header(col[1],'Start Time')
+        self.setup_tv_header(col[2],'Stop Time')
+        self.setup_tv_header(col[3],'Duration')
+        self.setup_tv_header(col[4],'Reference')
+        self.setup_tv_header(col[5],'RS')
+        self.setup_tv_header(col[6],'Count')
+        self.setup_tv_header(col[7],'Subtitle')
+        self.setup_tv_header(col[8],'Info')
 
     def setup_tv_header(self, column, text):
         column.props.clickable = True
