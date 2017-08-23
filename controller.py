@@ -21,7 +21,7 @@ from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
 from thesaurus import cThesaurus
 
-from subfile import srtFile
+from subfile import srtFile, gen_timestamp_srt_from_source
 from os.path import splitext, exists, split, normpath, join
 from shutil import copy as copyfile
 from os import rename, remove, makedirs, errno
@@ -706,7 +706,6 @@ class Controller:
         elif (event.keyval  == Gdk.KEY_Delete):
             self.on_TVCM_Delete(None)
 
-
     def on_new_button_clicked(self, widget):
         self.set_video_widget()
         dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': ''})
@@ -752,26 +751,36 @@ class Controller:
                 subs = srtFile(projectFiles['subFile']).read_from_file()
                 self.model.subtitles.clear()
                 for item in subs:
+                    if projectFiles['voFile'] != '':
+                        item.text = ''
                     self.model.subtitles.append(item)
                 self.model.subtitles.clear_all_modified_timestamps()
                 self.view['audio'].queue_draw()
-
+            
             if exists(projectFiles['voFile'].decode('utf-8')):
                 subs = srtFile(projectFiles['voFile']).read_from_file()
                 self.model.voReference.set_data(subs)
                 self.model.subtitles.load_vo_data(self.model.voReference)
+                gen_timestamp_srt_from_source(projectFiles['voFile'], projectFiles['subFile'])
             else:
                 if exists(projectFiles['subFile']) and projectFiles['voFile'] != '':
                     copyfile(projectFiles['subFile'], projectFiles['voFile'])
                     subs = srtFile(projectFiles['voFile']).read_from_file()
                     self.model.voReference.set_data(subs)
                     self.model.subtitles.load_vo_data(self.model.voReference)
+                    gen_timestamp_srt_from_source(projectFiles['voFile'], projectFiles['subFile'])
 
                 if self.preferences['Autosave']:
                     if self.autosaveHandle:
                         GObject.source_remove(self.autosaveHandle)
                         self.autosaveHandle = None
                     self.autosaveHandle = GObject.timeout_add_seconds(60, self.autosave)
+
+            if projectFiles['voFile'] == '':
+                referenceCol = self.view['subtitles'].get_columns()[4]
+                referenceCol.props.visible = False
+                self.view['HCM-Reference'].set_active(False)
+
 
     def autosave(self):
         if self.model.subtitles.is_changed():
@@ -862,6 +871,11 @@ class Controller:
         self.model.subtitles.clear_changed()
         self.check_modified()
         self.view['projectSettingsTB'].set_property('sensitive', True)
+
+        if projectData['voFile'] == '':
+            referenceCol = self.view['subtitles'].get_columns()[4]
+            referenceCol.props.visible = False
+            self.view['HCM-Reference'].set_active(False)
 
     def on_OCM_select(self, sender, result):
         sender.disconnect(sender.handler_select)
@@ -1103,7 +1117,7 @@ class Controller:
     def crash_save(self):
         if self.model.subFilename == '' :
             return
-        srtFile(self.model.subFilename+'_crash').write_to_file(self.model.subtitles.get_model(), encoding = self.preferences['Encoding'])
+        srtFile(self.model.subFilename+'_crash').write_to_file(self.model.subtitles.get_sub_list(), encoding = self.preferences['Encoding'])
 
     def on_save_button_clicked(self, widget):
         if self.model.subFilename == "":
@@ -1120,7 +1134,7 @@ class Controller:
                 remove(srtFilename,  srtFilename + '.1')
             if exists(srtFilename):
                 rename(srtFilename,  srtFilename + '.1')
-        srtFile(self.model.subFilename).write_to_file(self.model.subtitles.get_model(), encoding = self.preferences['Encoding'])
+        srtFile(self.model.subFilename).write_to_file(self.model.subtitles.get_sub_list(), encoding = self.preferences['Encoding'])
         self.save_subs_info()
         self.model.subtitles.clear_changed()
         self.check_modified()

@@ -42,7 +42,7 @@ class srtFile:
             f.write(UTF8_BOM)
         for i in enumerate(subs):
             f.write(str(i[0]+1) + '\n')
-            lines = str(i[1][0]).splitlines()
+            lines = str(i[1]).splitlines()
             for line in lines:
                 if encoding == 'Windows-1253':
                     f.write(line.decode('utf-8').encode(encoding = 'Windows-1253', errors = 'ignore') + '\n')
@@ -84,3 +84,11 @@ class srtFile:
                 state = [0, "", []]
                 stateIdx = 0
         return subs
+
+def gen_timestamp_srt_from_source(source, destination):
+    src = srtFile(source.decode('utf-8'))
+    dst = srtFile(destination.decode('utf-8'))
+    subs = src.read_from_file()
+    for sub in subs:
+        sub.text = ''
+    dst.write_to_file(subs)

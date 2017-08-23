@@ -585,3 +585,6 @@ class Subtitles(GObject.GObject):
             self.last_edited = sub
         elif attr == 'info':
             self.subs[path][self.COL_SUB_INFO] = sub.info_audio_str
+
+    def get_sub_list(self):
+        return [self.subs[i][self.COL_SUB] for i in xrange(len(self.subs))]

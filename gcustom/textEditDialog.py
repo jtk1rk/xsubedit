@@ -113,7 +113,10 @@ class cTextEditDialog(Gtk.Dialog):
             custom_insert_markup(self.helper_text_view.get_buffer(), sub.info_text_str)
         elif info_type == 'vo':
             self.text_view.get_buffer().set_text(sub.text)
-            self.helper_text_view.get_buffer().set_text(sub.vo)
+            if sub.vo != '':
+                self.helper_text_view.get_buffer().set_text(sub.vo)
+            else:
+                self.helper_text_view.get_buffer().set_text(sub.text)
 
         self.rs_text_label = Gtk.Label('Reading Speed: ')
         self.rs_value_label = Gtk.Label('')
