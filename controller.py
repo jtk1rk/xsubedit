@@ -237,6 +237,7 @@ class Controller:
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
 
         self.view['audio'].scenes = self.model.scenes
+        self.view['progress-bar'].set_visible(False)
 
         self.init_done = True
 
@@ -496,7 +497,6 @@ class Controller:
             self.scenedetect.stop()
 
         Gtk.main_quit()
-        sys.exit()
 
     def hist_back(self):
         if self.history.is_empty() or self.history.is_at_first_element():
@@ -799,12 +799,17 @@ class Controller:
                 self.view['HCM-Reference'].set_active(False)
 
             self.scenedetect = cSceneDetect(projectFiles['videoFile'])
-            #self.scenedetect.connect('finish', self.scenedetect_finish)
+            self.scenedetect.connect('finish', self.scenedetect_finish)
             self.scenedetect.connect('detect', self.scenedetect_detect)
+            self.scenedetect.connect('progress', self.scenedetect_progress)
+            self.view['progress-bar'].set_visible(True)
             self.scenedetect.start()
 
-    #def scenedetect_finish(self, sender):
-    #    print "finished scene detect"
+    def scenedetect_finish(self, sender):
+        self.view['progress-bar'].set_visible(False)
+
+    def scenedetect_progress(self, sender, percent):
+        self.view['progress-bar'].set_fraction(percent)
 
     def scenedetect_detect(self, sender, pos):
         self.model.scenes.append(pos)

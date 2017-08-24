@@ -58,7 +58,10 @@ class cPreferences:
             if tmpValue:
                 self.data['MRU'].remove(tmpValue)
             self.data['MRU'] = [value] + self.data['MRU']
-        self.data['MRU'] = [ item.decode('utf-8') for idx, item in enumerate(self.data['MRU']) if exists(item.decode('utf-8')) and (idx<10) ]
+            try:
+                self.data['MRU'] = [ item.decode('utf-8') for idx, item in enumerate(self.data['MRU']) if exists(item.decode('utf-8')) and (idx<10) ]
+            except:
+                pass
 
     def __setitem__(self, key, value):
         self.data[key] = value

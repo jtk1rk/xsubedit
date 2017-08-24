@@ -4,6 +4,7 @@ gi.require_version('Gdk', '3.0')
 gi.require_version('GObject', '2.0')
 from gi.repository import Gtk, Gdk, GObject
 from gcustom.audioWidget import cAudioWidget
+from gcustom.progressBar import cProgressBar
 
 class TimedStatusBar(Gtk.Statusbar):
     def __init__(self, timeout):
@@ -52,6 +53,7 @@ class View(Gtk.Window):
         self.widgets["scale"] = Gtk.HScale.new_with_range(0,100,1)
         self.widgets["scale"].set_property("draw-value", False)
         self.widgets["scale"].set_property("has-origin", False)
+        self.widgets['progress-bar'] = cProgressBar(height = 3)
         #self.widgets["statusbar"] = TimedStatusBar(4000)
 
         # Toolbar
@@ -192,6 +194,7 @@ class View(Gtk.Window):
         self.widgets["video-eventbox"].add(self.widgets["video"])
 
         self.widgets["audio-scale-container"].pack_start(self.widgets["audio"], True, True, 0)
+        self.widgets['audio-scale-container'].pack_start(self.widgets['progress-bar'], False, False, 0)
         self.widgets["audio-scale-container"].pack_end(self.widgets["scale"], False, False, 0)
         self.widgets["audio-video-container"].add(self.widgets["audio-scale-container"])
         self.widgets["audio-video-container"].add(self.widgets["video-eventbox"])
@@ -203,6 +206,7 @@ class View(Gtk.Window):
         self.widgets["toolbar-subtitles-container"].pack_start(self.widgets["toolbar-reports-container"], False, False, 0)
         self.widgets["vertical-sub-scrollable"].add(self.widgets["subtitles"])
         self.widgets["toolbar-subtitles-container"].pack_start(self.widgets["vertical-sub-scrollable"], True, True, 0)
+
         #self.widgets["toolbar-subtitles-container"].pack_end(self.widgets["statusbar"], False, False, 0)
 
         self.widgets["root-paned-container"].add(self.widgets["audio-video-container"])
