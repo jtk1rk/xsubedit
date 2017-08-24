@@ -22,3 +22,13 @@ class cVOReference(object):
             else:
                 break
         return res
+
+    def get_indexes_in_range(self, lowms, highms):
+        res = []
+        low_idx = bisect_right(self.stop_data, lowms)
+        for i in xrange(low_idx, len(self.start_data)):
+            if self.start_data[i] <= highms:
+                res.append(i)
+            else:
+                break
+        return res

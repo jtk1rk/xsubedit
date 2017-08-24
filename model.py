@@ -29,6 +29,7 @@ class Model(GObject.GObject):
         self.audio = None
         self.subtitles = Subtitles()
         self.voReference = cVOReference()
+        self.scenes = []
         self.ready = False
         # File Names
         self.voFilename = ""
@@ -53,4 +54,3 @@ class Model(GObject.GObject):
         self.video.calc_duration()
         self.ready = True
         self.emit("audio-ready")
-

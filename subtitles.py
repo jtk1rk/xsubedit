@@ -224,7 +224,7 @@ class subRec(GObject.GObject):
             self.__info = {}
             return
         if not self.__info.has_key(value[0]) or self.__info[value[0]] != value[1]:
-            if value[1] == '': 
+            if value[1] == '':
                 if self.__info.has_key(value[0]):
                     self.__info.pop(value[0])
             else:
@@ -383,7 +383,7 @@ class Subtitles(GObject.GObject):
             if self.subs[i][self.COL_SUB] == sub:
                 res = i
                 break
-        return res 
+        return res
 
     def inside_sub_old(self, msec):
         # allagh me bisect sto search
@@ -395,6 +395,8 @@ class Subtitles(GObject.GObject):
         return tmpSub
 
     def inside_sub(self, msec):
+        if len(self.subs) == 0:
+            return None
         idx = utils.bisect(self.subs, lambda x: x[self.COL_SUB].startTime, msec)
         sub = self.subs[idx][self.COL_SUB]
         return sub if sub.startTime <= msec <= sub.stopTime else None

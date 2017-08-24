@@ -8,8 +8,8 @@ import platform
 
 class Video(GObject.GObject):
     __gsignals__ = { 'position-update': (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)),  # float
-                               'videoDuration-Ready' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)) # long
-                            }
+                     'videoDuration-Ready' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)) # long
+                     }
 
     videoFilename = None
     videoDuration = 0

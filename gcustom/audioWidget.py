@@ -5,15 +5,17 @@ gi.require_version('Gdk', '3.0')
 gi.require_version('GObject', '2.0')
 from gi.repository import Gtk, Gdk, GObject
 from subtitles import subRec
+from bisect import bisect
+from time import time
 
 class cAudioWidget(Gtk.EventBox):
     __gsignals__ = {       'viewpos-update': (GObject.SIGNAL_RUN_LAST, None, (int,)),
-                              'sub-updated': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )), 
-                              'right-click': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )), 
-                              'dragged-sub': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)), 
-                              'vertical-scale-update': (GObject.SIGNAL_RUN_LAST, None, (float,)), 
+                              'sub-updated': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
+                              'right-click': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
+                              'dragged-sub': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)),
+                              'vertical-scale-update': (GObject.SIGNAL_RUN_LAST, None, (float,)),
                               'active-sub-changed' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
-                              'tmpSub-update': (GObject.SIGNAL_RUN_LAST, None, ()), 
+                              'tmpSub-update': (GObject.SIGNAL_RUN_LAST, None, ()),
                               'handle-double-click' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, int))
                               }
 
@@ -41,6 +43,8 @@ class cAudioWidget(Gtk.EventBox):
         self.mouse_event = None
         self.mouse_last_event = None
         self.mouse_last_click_coords = None
+        self.ms_to_coord_factor = 0
+        self.low_ms_coord = 0
 
         # Creating internal properties
         self.__viewportLower = None
@@ -91,6 +95,7 @@ class cAudioWidget(Gtk.EventBox):
         self.videoSegment = None
         self.voModel = None
         self.stickZoom = False
+        self.scenes = []
 
         # Connections
         self.drawingArea.connect('draw', self.on_draw)
@@ -99,6 +104,9 @@ class cAudioWidget(Gtk.EventBox):
         self.connect('button-release-event', self.on_button_release)
         self.connect('scroll-event', self.on_scroll)
         self.connect('motion-notify-event', self.on_motion_notify)
+
+    def set_scenes(self, ref):
+        self.scenes = ref
 
     def on_button_press(self, widget, event):
         if self.videoDuration == 0:
@@ -318,7 +326,6 @@ class cAudioWidget(Gtk.EventBox):
             self.zoom(event.direction, event.x)
             return
 
-        self.calc_parameters() # needed here?
         moveval = 25 * self.mspp
         if event.direction == Gdk.ScrollDirection.DOWN and self.highms < self.videoDuration + moveval:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
@@ -529,6 +536,9 @@ class cAudioWidget(Gtk.EventBox):
     def get_mouse_msec(self, pos):
         return int(self.lowms + (pos / float(self.width)) * (self.highms - self.lowms))
 
+    def get_viewport_pos_from_ms(ms):
+        return (ms / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) * widget.get_allocation().width
+
     def calc_parameters(self):
         self.lowms = self.viewportLower * self.videoDuration
         self.highms = self.viewportUpper * self.videoDuration
@@ -537,6 +547,8 @@ class cAudioWidget(Gtk.EventBox):
         if self.subtitlesModel != None:
             self.subList = set(self.subtitlesModel.list_subs_overlapping_window(self.lowms - 120, self.highms))
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
+        self.ms_to_coord_factor = self.width / (float(self.viewportUpper - self.viewportLower) * self.videoDuration)
+        self.low_ms_coord  = (self.viewportLower * self.width) / float(self.viewportUpper - self.viewportLower)
 
     def center_active_sub(self):
         low = int(self.activeSub.startTime)
@@ -621,8 +633,8 @@ class cAudioWidget(Gtk.EventBox):
         height = widget.get_allocation().height
 
         for sub in self.subList:
-            paintlow = ((sub.startTime / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if sub.startTime >= self.lowms else 0) * self.width
-            painthigh = ((sub.stopTime / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if sub.stopTime <= self.highms else 1) * self.width
+            paintlow = sub.startTime * self.ms_to_coord_factor - self.low_ms_coord if sub.startTime >= self.lowms else 0
+            painthigh = sub.stopTime * self.ms_to_coord_factor - self.low_ms_coord if sub.stopTime <= self.highms else self.width
             if sub == self.activeSub:
                 cc.set_source_rgba(0.9, 0.9, 0.9, 0.5)
             else:
@@ -664,8 +676,8 @@ class cAudioWidget(Gtk.EventBox):
                         cc.show_text(tmpText[i])
 
         for sub in self.voList:
-            paintlow = ((sub[0] / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if sub[0] >= self.lowms else 0) * self.width
-            painthigh = ((sub[1] / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if sub[1] <= self.highms else 1) * self.width
+            paintlow = sub[0] * self.ms_to_coord_factor - self.low_ms_coord if sub[0] >= self.lowms else 0
+            painthigh = sub[1] * self.ms_to_coord_factor - self.low_ms_coord if sub[1] <= self.highms else self.width
             cc.set_source_rgba(0.3, 0.4, 0.9, 0.7)
             cc.set_dash([6, 6, 6, 4])
             if sub[0] >= self.lowms and sub[0] <= self.highms:
@@ -693,11 +705,21 @@ class cAudioWidget(Gtk.EventBox):
 
         # Draw tmpSub
         if self.tmpSub != None and ((self.lowms <= self.tmpSub.startTime <= self.highms) or (self.lowms <= self.tmpSub.stopTime <= self.highms)):
-            paintlow = ((self.tmpSub.startTime / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if self.tmpSub.startTime >= self.lowms else 0) * self.width
-            painthigh = ((self.tmpSub.stopTime / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) if self.tmpSub.stopTime <= self.highms else 1) * self.width
+            paintlow = self.tmpSub.startTime * self.ms_to_coord_factor - self.low_ms_coord if self.tmpSub.startTime >= self.lowms else 0
+            painthigh = self.tmpSub.stopTime * self.ms_to_coord_factor - self.low_ms_coord if self.tmpSub.stopTime <= self.highms else self.width
             cc.set_source_rgba(1,1,1,0.7)
             cc.rectangle(paintlow, 2, painthigh - paintlow, height - 4)
             cc.fill()
+
+        # Draw Scene Lines
+        tmplines = self.scenes[ bisect(self.scenes, self.lowms) : bisect(self.scenes, self.highms) ]
+        for line_ms in tmplines:
+            viewportPos = line_ms * self.ms_to_coord_factor  - self.low_ms_coord
+            cc.set_source_rgba(0.894, 0.553, 0.329, 0.7)
+            cc.set_dash([1,2])
+            cc.move_to(viewportPos, 0)
+            cc.line_to(viewportPos, height)
+        cc.stroke()
 
         return True
 
@@ -725,18 +747,18 @@ class cAudioWidget(Gtk.EventBox):
         height = widget.get_allocation().height
 
         # Draw Position
-        viewportPos = (self.pos / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower)
-        if 0 <= viewportPos <= 1:
+        viewportPos = self.pos * self.ms_to_coord_factor - self.low_ms_coord
+        if 0 <= viewportPos <= self.width:
             cc.set_source_rgba(0.8, 0.8, 0.1, 0.7)
-            cc.move_to(viewportPos*width, 0)
-            cc.line_to(viewportPos*width, height)
+            cc.move_to(viewportPos, 0)
+            cc.line_to(viewportPos, height)
             cc.stroke()
 
         # Draw Cursor
-        viewportPos = (self.cursor / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower)
-        if 0 <= viewportPos <= 1:
+        viewportPos = self.cursor * self.ms_to_coord_factor - self.low_ms_coord
+        if 0 <= viewportPos <= self.width:
             cc.set_source_rgba(0.8, 0.8, 0.8, 1)
             cc.set_dash([1,3])
-            cc.move_to(viewportPos*width, 0)
-            cc.line_to(viewportPos*width, height)
+            cc.move_to(viewportPos, 0)
+            cc.line_to(viewportPos, height)
             cc.stroke()

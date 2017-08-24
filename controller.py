@@ -28,6 +28,7 @@ from os import rename, remove, makedirs, errno
 from history import cHistory
 from utils import cPreferences, get_rel_path, do_all, DIR_DELIMITER, filter_markup
 from cmediainfo import cMediaInfo
+from scenedetect import cSceneDetect
 import ctypes, platform
 import pickle
 import appdirs
@@ -50,7 +51,7 @@ class Controller:
 
     def __init__(self, model, view):
         self.model = model
-        self.view = view 
+        self.view = view
 
         GObject.type_register(subRec)
 
@@ -235,6 +236,8 @@ class Controller:
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
 
+        self.view['audio'].scenes = self.model.scenes
+
         self.init_done = True
 
     def on_HCM_toggled(self, widget, column):
@@ -347,6 +350,7 @@ class Controller:
         projectData = pickle.load(open(self.model.projectFilename.decode('utf-8'), 'rb'))
         projectData['subs_info'] = subs_info
         projectData['subs_hash'] = self.model.subtitles.calc_hash()
+        projectData['scenes'] = self.model.scenes
         pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
 
     def load_subs_info(self):
@@ -355,6 +359,8 @@ class Controller:
         if 'subs_info' not in projectData or ('subs_info' in projectData and len(projectData['subs_info']) < len(self.model.subtitles.get_model())):
             return
         subs_info = projectData['subs_info']
+        self.model.scenes = projectData['scenes'][:]
+        self.view['audio'].scenes = self.model.scenes
         if self.model.subtitles.calc_hash() == projectData['subs_hash']:
             for i, row in enumerate(self.model.subtitles.get_model()):
                 for key in subs_info[i]:
@@ -479,7 +485,16 @@ class Controller:
             res = save_changes_dialog.run()
             if res == Gtk.ResponseType.OK:
                 self.on_save_button_clicked(None)
+            else:
+                self.save_subs_info()
             save_changes_dialog.destroy()
+        else:
+            if self.view['audio'].videoDuration != 0:
+                self.save_subs_info()
+
+        if hasattr(self, 'scenedetect'):
+            self.scenedetect.stop()
+
         Gtk.main_quit()
         sys.exit()
 
@@ -663,6 +678,8 @@ class Controller:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
+            if self.view['audio'].videoDuration == 0:
+                return
             self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
@@ -756,7 +773,7 @@ class Controller:
                     self.model.subtitles.append(item)
                 self.model.subtitles.clear_all_modified_timestamps()
                 self.view['audio'].queue_draw()
-            
+
             if exists(projectFiles['voFile'].decode('utf-8')):
                 subs = srtFile(projectFiles['voFile']).read_from_file()
                 self.model.voReference.set_data(subs)
@@ -781,6 +798,18 @@ class Controller:
                 referenceCol.props.visible = False
                 self.view['HCM-Reference'].set_active(False)
 
+            self.scenedetect = cSceneDetect(projectFiles['videoFile'])
+            #self.scenedetect.connect('finish', self.scenedetect_finish)
+            self.scenedetect.connect('detect', self.scenedetect_detect)
+            self.scenedetect.start()
+
+    #def scenedetect_finish(self, sender):
+    #    print "finished scene detect"
+
+    def scenedetect_detect(self, sender, pos):
+        self.model.scenes.append(pos)
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
 
     def autosave(self):
         if self.model.subtitles.is_changed():
@@ -1033,7 +1062,7 @@ class Controller:
         prevSub = self.model.subtitles.get_prev(sub)
         nextSub = self.model.subtitles.get_next(sub)
         if (prevSub != None and timeStamp(newText) < prevSub.stopTime) or (nextSub != None and timeStamp(newText) > nextSub.startTime) or (ts2ms(newText) <= 0):
-            return 
+            return
         if col == 1:
             self.history.add(('edit-startTime', sub, int(sub.startTime), newText))
             sub.startTime = newText
@@ -1055,7 +1084,7 @@ class Controller:
         else:
             mouse_msec = self.view['audio'].get_mouse_msec(self.view['audio'].mouse_last_click_coords[0])
             prevSub = self.model.subtitles.get_sub_before_timeStamp(mouse_msec)
-            prevSub = prevSub if prevSub != None else subRec(0, 0, '') 
+            prevSub = prevSub if prevSub != None else subRec(0, 0, '')
             nextSub = self.model.subtitles.get_sub_after_timeStamp(mouse_msec)
             nextSub = nextSub if nextSub != None else subRec(self.view['audio'].videoDuration,self.view['audio'].videoDuration,'')
             lowLimit = int(mouse_msec if mouse_msec > prevSub.stopTime + 120 else prevSub.stopTime + 120)
