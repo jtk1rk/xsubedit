@@ -13,6 +13,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
             self.use_vo = True
         else:
             self.use_vo = (project['voFile'] != '')
+        project['two-pass-detection'] = False
 
         hbox1 = Gtk.HBox(spacing=4)
         self.videoButton = Gtk.Button()
@@ -46,7 +47,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.voButton.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON))
         self.project_vo_filename_entry = Gtk.Entry()
         self.project_vo_filename_entry.props.width_request = 400
-        #hbox4.pack_start(Gtk.Label("Project VO"), False, False, 0)
+
         voCheckButton = Gtk.CheckButton('Project VO')
         voCheckButton.set_active(self.use_vo)
         voCheckButton.connect('toggled', self.on_vo_toggled)
@@ -54,16 +55,21 @@ class cProjectSettingsDialog(Gtk.Dialog):
         hbox4.pack_end(self.voButton, False, False, 0)
         hbox4.pack_end(self.project_vo_filename_entry, False, True, 0)
 
+        passes_check_button = Gtk.CheckButton('Two pass scene detection (faster)')
+        passes_check_button.set_active(project['two-pass-detection'])
+
         self.vbox.pack_start(hbox1, False, False, 0)
         self.vbox.pack_start(hbox2, False, False, 0)
         self.vbox.pack_start(hbox3, False, False, 0)
         self.vbox.pack_start(hbox4, False, False, 0)
+        self.vbox.pack_start(passes_check_button, False, False, 0)
 
         self.project_video_entry.set_text(project['videoFile'])
         self.project_filename_entry.set_text(project['projectFile'])
         self.project_sub_filename_entry.set_text(project['subFile'])
         self.project_vo_filename_entry.set_text(project['voFile'])
 
+        passes_check_button.connect('toggled', self.on_passes_checkbutton_toggle)
         self.project_filename_entry.connect('changed', self.on_project_filename_entry_change)
         self.project_video_entry.connect('changed', self.on_project_video_entry_change)
         self.project_sub_filename_entry.connect('changed', self.on_project_sub_filename_entry_change)
@@ -77,6 +83,9 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.vbox.show_all()
         self.set_default_response(Gtk.ResponseType.OK)
         self.on_vo_toggled(voCheckButton)
+
+    def on_passes_checkbutton_toggle(self, widget):
+        self.project['two-pass-detection'] = widget.get_active()
 
     def on_vo_toggled(self, widget):
         self.use_vo = widget.get_active()

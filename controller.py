@@ -798,7 +798,7 @@ class Controller:
                 referenceCol.props.visible = False
                 self.view['HCM-Reference'].set_active(False)
 
-            self.scenedetect = cSceneDetect(projectFiles['videoFile'])
+            self.scenedetect = cSceneDetect(projectFiles['videoFile'], one_pass = not projectFiles['two-pass-detection'])
             self.scenedetect.connect('finish', self.scenedetect_finish)
             self.scenedetect.connect('detect', self.scenedetect_detect)
             self.scenedetect.connect('progress', self.scenedetect_progress)
@@ -807,6 +807,7 @@ class Controller:
 
     def scenedetect_finish(self, sender):
         self.view['progress-bar'].set_visible(False)
+        self.save_subs_info()
 
     def scenedetect_progress(self, sender, percent):
         self.view['progress-bar'].set_fraction(percent)
