@@ -129,6 +129,7 @@ class Controller:
         view['preferencesTB'].connect('clicked', self.preferences_clicked)
         view['projectSettingsTB'].connect('clicked', self.on_project_settings_clicked)
         view['audio'].connect('viewpos-update', self.on_audio_pos)
+        view['video'].connect('button-release-event', self.on_video_clicked)
         self.history.connect('history-update',  self.on_history_update)
 
         model.connect('audio-ready', self.on_audio_ready)
@@ -442,11 +443,11 @@ class Controller:
         if self.videoWidgetIsSet :
             return
         self.videoWidgetIsSet = True
-        widget = self.view['video']
+        widget = self.view['video'].DrawingArea
         video = widget.get_property('window')
         if platform.system() == 'Windows':
             if not video.ensure_native():
-                print 'Error - video playback requires a native window'
+                print('Error: Video playback requires a native window.')
             ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
             ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object]
             drawingarea_gpointer = ctypes.pythonapi.PyCapsule_GetPointer(video.__gpointer__, None)
@@ -1197,12 +1198,15 @@ class Controller:
         self.model.video.pause()
 
     def on_video_clicked(self, widget, event):
-        if not self.model.video.is_ready():
-            return
-        if self.model.video.is_playing():
-            self.model.video.pause()
-        else:
-            self.model.video.play()
+        if event.button == 1:
+            if not self.model.video.is_ready():
+                return
+            if self.model.video.is_playing():
+                self.model.video.pause()
+            else:
+                self.model.video.play()
+        elif event.button == 3:
+            self.view['VideoContextMenu'].popup(None, None, None, None, event.button, event.time)
 
     def on_audio_mousewheel(self, widget, event):
         self.view['scale'].set_value(self.view['audio'].viewportLower * 100)

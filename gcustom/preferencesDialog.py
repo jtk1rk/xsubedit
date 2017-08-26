@@ -25,7 +25,7 @@ class cPreferencesDialog(Gtk.Dialog):
         self.CheckButton_Incremental_Backups = Gtk.CheckButton('Incremental Backups')
         self.CheckButton_Autosave = Gtk.CheckButton('Autosave (every 1 minute)')
         hbox = Gtk.HBox(spacing = 4)
-        label = Gtk.Label("Waveform Zoom")
+        label = Gtk.Label('Waveform Zoom')
         self.zoomEntry = Gtk.Entry()
         useCurrentZoomButton = Gtk.Button('Use Current')
         useCurrentZoomButton.connect('clicked', self.on_useCurrentZoomButton_clicked)
@@ -44,7 +44,24 @@ class cPreferencesDialog(Gtk.Dialog):
             self.enc_win1253.set_active(True)
         elif self.preferences['Encoding'] == 'UTF-8 BOM':
             self.enc_utf8_bom.set_active(True)
-        
+
+        if not 'SceneDetect' in self.preferences:
+            self.preferences['SceneDetect'] = {'Auto': False, 'TwoPass': True}
+
+        self.SDCheckButton = Gtk.CheckButton('Auto Scene Detect')
+        self.SDCheckButton.set_active(self.preferences['SceneDetect']['Auto'])
+        self.SDPCheckButton = Gtk.CheckButton('Two Pass (fast)')
+        self.SDPCheckButton.set_active(self.preferences['SceneDetect']['TwoPass'])
+        self.SDPCheckButton.set_sensitive(self.SDCheckButton.get_active())
+
+        hbox = Gtk.HBox(spacing = 5)
+        hbox.add(self.SDCheckButton)
+        hbox.add(self.SDPCheckButton)
+        self.vbox.add(hbox)
+
+        self.SDCheckButton.connect('toggled', self.on_SD_toggle, 'Auto')
+        self.SDPCheckButton.connect('toggled', self.on_SD_toggle, 'TwoPass')
+
         if not 'Zoom' in self.preferences:
             self.preferences['Zoom'] = 20
 
@@ -58,6 +75,14 @@ class cPreferencesDialog(Gtk.Dialog):
 
         self.vbox.show_all()
         self.set_default_response(Gtk.ResponseType.OK)
+
+    def on_SD_toggle(self, widget, value):
+        if value == 'Auto':
+            self.SDPCheckButton.set_sensitive(self.SDCheckButton.get_active())
+            self.preferences['SceneDetect'][value] = widget.get_active()
+        elif value == 'TwoPass':
+            self.preferences['SceneDetect'][value] = widget.get_active()
+
 
     def on_zoomEntry_change(self, sender):
         if isfloat(sender.get_text()):
