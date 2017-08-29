@@ -19,6 +19,7 @@ from gcustom.searchReplaceDialog import cSearchReplaceDialog
 from gcustom.durationChangeDialog import cDurationChangeDialog
 from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
+from gcustom.selectionListDialog import cSelectionListDialog
 from thesaurus import cThesaurus
 
 from subfile import srtFile, gen_timestamp_srt_from_source
@@ -400,6 +401,10 @@ class Controller:
                     sub.info = (key, subs_info[i][key])
                     if key == 'Audio-Last_Edited':
                         self.model.subtitles.last_edited = sub
+                        path = self.model.subtitles.get_sub_path(sub)
+                        if path != None:
+                            with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
+                                self.view['subtitles'].set_cursor(path)
 
     def on_TB_check_clicked(self, widget):
         if self.model.subtitles.is_empty():
@@ -815,6 +820,7 @@ class Controller:
                     copyfile(projectFiles['subFile'], projectFiles['voFile'])
                     subs = srtFile(projectFiles['voFile']).read_from_file()
                     self.model.voReference.set_data(subs)
+                    self.model.voReference.filename = projectFiles['voFile']
                     self.model.subtitles.load_vo_data(self.model.voReference)
                     gen_timestamp_srt_from_source(projectFiles['voFile'], projectFiles['subFile'])
 
@@ -886,6 +892,7 @@ class Controller:
         subs = srtFile(self.model.voFilename.decode('utf-8')).read_from_file()
         self.model.voReference.set_data(subs)
         self.model.subtitles.load_vo_data(self.model.voReference)
+        self.model.voReference.filename = filename
 
     def open_pkf(self, filename):
         if not exists(filename.decode('utf-8')):
@@ -1050,6 +1057,31 @@ class Controller:
                     if key.startswith('Audio'):
                         sub.info = (key, (sub.info[key][0].replace('red', 'black').replace('orange', 'black'), []))
                 self.save_subs_info()
+
+            if self.view['subtitles'].get_column(4) == res[1]:
+                sub = self.model.subtitles.get_sub_from_path(res[0])
+                voIdxList = self.model.voReference.get_indexes_in_range(sub.startTime, sub.stopTime)
+                voList = [self.model.voReference.get_line(idx) for idx in voIdxList]
+                if len(voList) > 1:
+                    dialog = cSelectionListDialog(self.view, [item[3] for item in voList], title = 'Select VO Line', header_title = 'Lines')
+                    dialog.run()
+                    if dialog.result == None:
+                        return
+                    editIdx = dialog.result
+                    dialog.destroy()
+                else:
+                    editIdx = 0
+                tmpSub = subRec(voList[editIdx][1], voList[editIdx][2], voList[editIdx][3])
+                edit = cTextEditDialog(self.view, tmpSub, 'copy', self.view['subtitles'].thesaurus) # Thesaurus should really be at the model, not on a view oject
+                response = edit.run()
+                if response == Gtk.ResponseType.OK and self.model.voReference.text_data[voList[editIdx][0]] != edit.text:
+                    self.model.voReference.text_data[voList[editIdx][0]] = edit.text
+                    vo_res = self.model.voReference.get_subs_in_range(int(sub.startTime), (sub.stopTime))
+                    sub.vo = '\n'.join(voItem[2].strip() for voItem in vo_res)
+                    self.view['audio'].invalidateCanvas()
+                    self.view['audio'].queue_draw()
+                    self.model.voReference.save()
+                edit.destroy()
 
         if event.button == 3:
             res = self.view['subtitles'].get_path_at_pos(event.x, event.y)

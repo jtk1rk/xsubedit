@@ -5,7 +5,6 @@ gi.require_version('Gdk', '3.0')
 gi.require_version('GObject', '2.0')
 from gi.repository import Gtk, Gdk,  GObject
 import subtitles
-#import platform
 from tagtext import TagText as cTagText
 from mparser import Tag
 from utils import brList
@@ -49,7 +48,7 @@ def custom_insert_markup(buff,  markup):
 class cHistory:
     def __init__(self, textBuffer):
         self.data = brList()
-        self.textBuffer = textBuffer 
+        self.textBuffer = textBuffer
         self.curIdx = 0
         self.serialize_format = self.textBuffer.register_serialize_tagset()
         self.deserialize_format = self.textBuffer.register_deserialize_tagset()
@@ -117,6 +116,9 @@ class cTextEditDialog(Gtk.Dialog):
                 self.helper_text_view.get_buffer().set_text(sub.vo)
             else:
                 self.helper_text_view.get_buffer().set_text(sub.text)
+        elif info_type == 'copy':
+            self.text_view.get_buffer().set_text(sub.text)
+            self.helper_text_view.get_buffer().set_text(sub.text)
 
         self.rs_text_label = Gtk.Label('Reading Speed: ')
         self.rs_value_label = Gtk.Label('')

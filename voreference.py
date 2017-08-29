@@ -1,7 +1,10 @@
 from bisect import bisect_right
+from subfile import srtFile
+from subtitles import subRec
 
 class cVOReference(object):
     def __init__(self):
+        self.filename = ''
         self.start_data = []
         self.stop_data = []
         self.text_data = []
@@ -12,6 +15,9 @@ class cVOReference(object):
             tmpData.append((sub.startTime, sub.stopTime, sub.text))
         tmpData.sort(key=lambda tup: tup[0])
         self.start_data, self.stop_data, self.text_data = zip(*tmpData)
+        self.start_data = list(self.start_data)
+        self.stop_data = list(self.stop_data)
+        self.text_data = list(self.text_data)
 
     def get_subs_in_range(self, lowms, highms):
         res = []
@@ -32,3 +38,13 @@ class cVOReference(object):
             else:
                 break
         return res
+
+    def get_line(self, idx):
+        return [idx, self.start_data[idx], self.stop_data[idx], self.text_data[idx]]
+
+    def save(self):
+        if self.filename == '':
+            return
+        subList = [subRec(self.start_data[i].msec, self.stop_data[i].msec, self.text_data[i]) for i in xrange(len(self.text_data))]
+        f = srtFile(self.filename)
+        f.write_to_file(subList)
