@@ -52,7 +52,6 @@ class cPreferencesDialog(Gtk.Dialog):
         self.SDCheckButton.set_active(self.preferences['SceneDetect']['Auto'])
         self.SDPCheckButton = Gtk.CheckButton('Two Pass (fast)')
         self.SDPCheckButton.set_active(self.preferences['SceneDetect']['TwoPass'])
-        self.SDPCheckButton.set_sensitive(self.SDCheckButton.get_active())
 
         hbox = Gtk.HBox(spacing = 5)
         hbox.add(self.SDCheckButton)
@@ -78,7 +77,6 @@ class cPreferencesDialog(Gtk.Dialog):
 
     def on_SD_toggle(self, widget, value):
         if value == 'Auto':
-            self.SDPCheckButton.set_sensitive(self.SDCheckButton.get_active())
             self.preferences['SceneDetect'][value] = widget.get_active()
         elif value == 'TwoPass':
             self.preferences['SceneDetect'][value] = widget.get_active()

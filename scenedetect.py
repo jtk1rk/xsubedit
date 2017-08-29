@@ -1,5 +1,3 @@
-#for fastest detecting, first encode: ffmpeg -y -i 1.mkv -c:a copy -vf "scale=100:-2" -sws_flags fast_bilinear -sws_dither none -c:v libx264 -preset:v ultrafast  out.mkv
-
 import gi
 gi.require_version('GObject', '2.0')
 gi.require_version('Gtk', '3.0')

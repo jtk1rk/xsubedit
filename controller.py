@@ -50,6 +50,8 @@ class Controller:
     tvSelectionList = []
 
     def __init__(self, model, view):
+        #self.state = {'model': model, 'view': view} # Here we will save all local class variables
+        #self.preferences should be a class containing "dialog_run" method that shows the dialog
         self.model = model
         self.view = view
 
@@ -81,11 +83,11 @@ class Controller:
 
         view['subtitles'].thesaurus = cThesaurus(path)
 
-        self.preferences = cPreferences(appdirs.user_config_dir('xSubEdit', 'jtapps') + DIR_DELIMITER + 'xSubEdit.conf')
+        self.preferences = cPreferences(appdirs.user_config_dir('xSubEdit', 'jtapps') + DIR_DELIMITER + 'xSubEdit.conf') #preferences do not go inside self.state
 
         self.cursorLeftMargin = Gdk.Cursor(Gdk.CursorType.LEFT_SIDE)
         self.cursorRightMargin = Gdk.Cursor(Gdk.CursorType.RIGHT_SIDE)
-        self.view['scale'].set_can_focus(False)
+        view['scale'].set_can_focus(False)
 
         # Connections
         model.video.playbus.connect('message::eos', self.on_video_finish)
@@ -122,7 +124,7 @@ class Controller:
         view['checkTB'].connect('clicked', self.on_TB_check_clicked)
         view['importSRTTB'].connect('clicked', self.on_TB_import_srt)
         view['subtitles'].connect('key-release-event', self.on_key_release)
-        self.tv_cursor_changed_id  = view['subtitles'].connect('cursor_changed',  self.on_tv_cursor_changed)
+        self.tv_cursor_changed_id  = view['subtitles'].connect('cursor_changed', self.on_tv_cursor_changed)
         view['audio'].connect('key-release-event', self.on_key_release)
         view['undoTB'].connect('clicked', self.on_undo_clicked)
         view['redoTB'].connect('clicked', self.on_redo_clicked)
@@ -131,6 +133,12 @@ class Controller:
         view['audio'].connect('viewpos-update', self.on_audio_pos)
         view['video'].connect('button-release-event', self.on_video_clicked)
         self.history.connect('history-update',  self.on_history_update)
+        view['VCM-Continue'].connect('activate', self.on_VCM, 'VCM-Continue')
+        view['VCM-TwoPassSD'].connect('activate', self.on_VCM, 'VCM-TwoPassSD')
+        view['VCM-SD-Entire-Video'].connect('activate', self.on_VCM, 'VCM-SD-Entire-Video')
+        view['VCM-SD-Subtitle-Range'].connect('activate', self.on_VCM, 'VCM-SD-Subtitle-Range')
+        view['VCM-SD-Highlited-Range'].connect('activate', self.on_VCM, 'VCM-SD-Highlited-Range')
+        view['VCM-SD-Selected-Subtitles-Range'].connect('activate', self.on_VCM, 'VCM-SD-Selected-Subtitles-Range')
 
         model.connect('audio-ready', self.on_audio_ready)
         model.video.connect('position-update', self.on_video_position)
@@ -181,7 +189,6 @@ class Controller:
         view['HCM-RS'].connect('toggled', self.on_HCM_toggled, column5)
         view['HCM-Count'].connect('toggled', self.on_HCM_toggled, column6)
         view['HCM-Info'].connect('toggled', self.on_HCM_toggled, column8)
-
 
         column0.pack_start(viewNumberCell, False)
         column1.pack_start(editTimeCell1, True)
@@ -240,7 +247,39 @@ class Controller:
         self.view['audio'].scenes = self.model.scenes
         self.view['progress-bar'].set_visible(False)
 
+        self.scene_detection_enabled = False
+        if 'SceneDetect' in self.preferences and 'TwoPass' in self.preferences['SceneDetect']:
+            self.scene_detection_twopass = self.preferences['SceneDetect']['TwoPass']
+        else:
+            self.scene_detection_twopass = True
+        self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
+
+        self.scene_detection_range = 'full'
+
         self.init_done = True
+
+    def on_VCM(self, widget, option):
+        if option == 'VCM-Continue':
+            self.scene_detection_enabled = True
+        elif option == 'VCM-TwoPassSD':
+            self.scene_detection_twopass = widget.get_active()
+            if 'SceneDetect' in self.preferences['SceneDetect'] and 'TwoPass' in self.preferences['TwoPass']:
+                self.preferences['SceneDetect']['TwoPass'] = self.scene_detection_twopass
+            else:
+                self.preferences['SceneDetect'] = {'Auto': False, 'TwoPass': widget.get_active()}
+            self.preferences.save()
+        elif option == 'VCM-SD-Entire-Video':
+            self.scene_detection_range = 'full'
+            self.scene_detection_enabled = True
+        elif option == 'VCM-SD-Subtitle-Range':
+            self.scene_detection_range = 'range:%s' % ()
+            self.scene_detection_enabled = True
+        elif option == 'VCM-SD-Selected-Subtitles-Range':
+            self.scene_detection_range = 'range:%s' % ()
+            self.scene_detection_enabled = True
+        elif option == 'VCM-SD-Highlited-Range':
+            self.scene_detection_range = 'range:%s' % ()
+            self.scene_detection_enabled = True
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()
@@ -1206,6 +1245,9 @@ class Controller:
             else:
                 self.model.video.play()
         elif event.button == 3:
+            vready = self.view['audio'].videoDuration != 0
+            self.view['VCM-SceneDetect'].set_sensitive(vready)
+            self.view['VCM-Continue'].set_sensitive(vready)
             self.view['VideoContextMenu'].popup(None, None, None, None, event.button, event.time)
 
     def on_audio_mousewheel(self, widget, event):
