@@ -81,7 +81,6 @@ class cPreferencesDialog(Gtk.Dialog):
         elif value == 'TwoPass':
             self.preferences['SceneDetect'][value] = widget.get_active()
 
-
     def on_zoomEntry_change(self, sender):
         if isfloat(sender.get_text()):
             if float(sender.get_text()) == 0:

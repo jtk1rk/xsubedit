@@ -133,12 +133,9 @@ class Controller:
         view['audio'].connect('viewpos-update', self.on_audio_pos)
         view['video'].connect('button-release-event', self.on_video_clicked)
         self.history.connect('history-update',  self.on_history_update)
-        view['VCM-Continue'].connect('activate', self.on_VCM, 'VCM-Continue')
         view['VCM-TwoPassSD'].connect('activate', self.on_VCM, 'VCM-TwoPassSD')
-        view['VCM-SD-Entire-Video'].connect('activate', self.on_VCM, 'VCM-SD-Entire-Video')
-        view['VCM-SD-Subtitle-Range'].connect('activate', self.on_VCM, 'VCM-SD-Subtitle-Range')
-        view['VCM-SD-Highlited-Range'].connect('activate', self.on_VCM, 'VCM-SD-Highlited-Range')
-        view['VCM-SD-Selected-Subtitles-Range'].connect('activate', self.on_VCM, 'VCM-SD-Selected-Subtitles-Range')
+        view['VCM-SceneDetect'].connect('activate', self.on_VCM, 'VCM-SceneDetect')
+        view['VCM-StopDetection'].connect('activate', self.on_VCM, 'VCM-StopDetection')
 
         model.connect('audio-ready', self.on_audio_ready)
         model.video.connect('position-update', self.on_video_position)
@@ -247,39 +244,33 @@ class Controller:
         self.view['audio'].scenes = self.model.scenes
         self.view['progress-bar'].set_visible(False)
 
-        self.scene_detection_enabled = False
-        if 'SceneDetect' in self.preferences and 'TwoPass' in self.preferences['SceneDetect']:
+        try:
             self.scene_detection_twopass = self.preferences['SceneDetect']['TwoPass']
-        else:
+        except:
             self.scene_detection_twopass = True
-        self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
 
-        self.scene_detection_range = 'full'
+        self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
 
         self.init_done = True
 
     def on_VCM(self, widget, option):
-        if option == 'VCM-Continue':
-            self.scene_detection_enabled = True
-        elif option == 'VCM-TwoPassSD':
+        if option == 'VCM-TwoPassSD':
             self.scene_detection_twopass = widget.get_active()
-            if 'SceneDetect' in self.preferences['SceneDetect'] and 'TwoPass' in self.preferences['TwoPass']:
+            try:
                 self.preferences['SceneDetect']['TwoPass'] = self.scene_detection_twopass
-            else:
+            except:
                 self.preferences['SceneDetect'] = {'Auto': False, 'TwoPass': widget.get_active()}
             self.preferences.save()
-        elif option == 'VCM-SD-Entire-Video':
-            self.scene_detection_range = 'full'
-            self.scene_detection_enabled = True
-        elif option == 'VCM-SD-Subtitle-Range':
-            self.scene_detection_range = 'range:%s' % ()
-            self.scene_detection_enabled = True
-        elif option == 'VCM-SD-Selected-Subtitles-Range':
-            self.scene_detection_range = 'range:%s' % ()
-            self.scene_detection_enabled = True
-        elif option == 'VCM-SD-Highlited-Range':
-            self.scene_detection_range = 'range:%s' % ()
-            self.scene_detection_enabled = True
+        elif option == 'VCM-SceneDetect':
+            try:
+                one_pass = (self.preferences['SceneDetect']['TwoPass'] == False)
+            except:
+                one_pass = False
+            self.scenedetect_start(one_pass)
+        elif option == 'VCM-StopDetection' and hasattr(self, 'scenedetect'):
+            self.scenedetect.stop()
+            self.view['progress-bar'].set_visible(False)
+
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()
@@ -838,12 +829,22 @@ class Controller:
                 referenceCol.props.visible = False
                 self.view['HCM-Reference'].set_active(False)
 
-            self.scenedetect = cSceneDetect(projectFiles['videoFile'], one_pass = not projectFiles['two-pass-detection'])
-            self.scenedetect.connect('finish', self.scenedetect_finish)
-            self.scenedetect.connect('detect', self.scenedetect_detect)
-            self.scenedetect.connect('progress', self.scenedetect_progress)
-            self.view['progress-bar'].set_visible(True)
-            self.scenedetect.start()
+            try:
+                tmpv = self.preferences['SceneDetect']['Auto']
+                one_pass = (self.preferences['SceneDetect']['TwoPass'] == False)
+            except:
+                tmpv = False
+                one_pass = False
+            if tmpv:
+                self.scenedetect_start(one_pass)
+
+    def scenedetect_start(self, _one_pass):
+        self.scenedetect = cSceneDetect(self.model.video.videoFilename, one_pass = _one_pass)
+        self.scenedetect.connect('finish', self.scenedetect_finish)
+        self.scenedetect.connect('detect', self.scenedetect_detect)
+        self.scenedetect.connect('progress', self.scenedetect_progress)
+        self.view['progress-bar'].set_visible(True)
+        self.scenedetect.start()
 
     def scenedetect_finish(self, sender):
         self.view['progress-bar'].set_visible(False)
@@ -853,9 +854,10 @@ class Controller:
         self.view['progress-bar'].set_fraction(percent)
 
     def scenedetect_detect(self, sender, pos):
-        self.model.scenes.append(pos)
-        self.view['audio'].invalidateCanvas()
-        self.view['audio'].queue_draw()
+        if not pos in self.model.scenes:
+            self.model.scenes.append(pos)
+            self.view['audio'].invalidateCanvas()
+            self.view['audio'].queue_draw()
 
     def autosave(self):
         if self.model.subtitles.is_changed():
@@ -1247,7 +1249,12 @@ class Controller:
         elif event.button == 3:
             vready = self.view['audio'].videoDuration != 0
             self.view['VCM-SceneDetect'].set_sensitive(vready)
-            self.view['VCM-Continue'].set_sensitive(vready)
+            if hasattr(self, 'scenedetect') and self.scenedetect.is_active():
+                self.view['VCM-SceneDetect'].hide()
+                self.view['VCM-StopDetection'].show()
+            else:
+                self.view['VCM-SceneDetect'].show()
+                self.view['VCM-StopDetection'].hide()
             self.view['VideoContextMenu'].popup(None, None, None, None, event.button, event.time)
 
     def on_audio_mousewheel(self, widget, event):

@@ -61,7 +61,7 @@ class View(Gtk.Window):
         self.widgets['scale'] = Gtk.HScale.new_with_range(0,100,1)
         self.widgets['scale'].set_property('draw-value', False)
         self.widgets['scale'].set_property('has-origin', False)
-        self.widgets['progress-bar'] = cProgressBar(height = 3)
+        self.widgets['progress-bar'] = cProgressBar(height = 5)
         #self.widgets['statusbar'] = TimedStatusBar(4000)
 
         # Toolbar
@@ -187,33 +187,17 @@ class View(Gtk.Window):
         # Video Context Menu
         self.widgets['VideoContextMenu'] = Gtk.Menu()
         self.widgets['VCM-SceneDetect'] = Gtk.MenuItem('Detect Scene Changes')
-        SDSubmenu = Gtk.Menu()
+        self.widgets['VCM-StopDetection'] = Gtk.MenuItem('Stop Detection')
         self.widgets['VCM-TwoPassSD'] = Gtk.CheckMenuItem('Two-pass Detection (faster)')
-        self.widgets['VCM-Continue'] = Gtk.MenuItem('Continue Detection')
         self.widgets['VCM-TwoPassSD'].set_active(True)
 
-        self.widgets['VCM-SceneDetect'].set_property('submenu', SDSubmenu)
-        self.widgets['VCM-SD-Entire-Video'] = Gtk.MenuItem('Entire Video')
-        self.widgets['VCM-SD-Subtitle-Range'] = Gtk.MenuItem('All Subtitles Range')
-        self.widgets['VCM-SD-Selected-Subtitles-Range'] = Gtk.MenuItem('Selected Subtitles Range')
-        self.widgets['VCM-SD-Highlited-Range'] = Gtk.MenuItem('Highlited Range')
-
-        SDSubmenu.add(self.widgets['VCM-SD-Entire-Video'])
-        SDSubmenu.add(self.widgets['VCM-SD-Subtitle-Range'])
-        SDSubmenu.add(self.widgets['VCM-SD-Selected-Subtitles-Range'])
-        SDSubmenu.add(self.widgets['VCM-SD-Highlited-Range'])
-
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-SceneDetect'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-StopDetection'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-TwoPassSD'])
-        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Continue'])
 
         self.widgets['VCM-SceneDetect'].show()
+        self.widgets['VCM-StopDetection'].hide()
         self.widgets['VCM-TwoPassSD'].show()
-        self.widgets['VCM-SD-Highlited-Range'].show()
-        self.widgets['VCM-SD-Subtitle-Range'].show()
-        self.widgets['VCM-SD-Entire-Video'].show()
-        self.widgets['VCM-SD-Selected-Subtitles-Range'].show()
-        self.widgets['VCM-Continue'].show()
 
         # Containers
         self.widgets['root-paned-container'] = Gtk.Paned(orientation = Gtk.Orientation.VERTICAL)

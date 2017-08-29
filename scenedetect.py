@@ -20,6 +20,7 @@ class cSceneDetect(GObject.GObject, threading.Thread):
 
         self.file_not_found = False
         self._stop = False
+        self.active = False
         self.one_pass = one_pass
 
         if not exists(vidFile.decode('utf-8')):
@@ -45,9 +46,14 @@ class cSceneDetect(GObject.GObject, threading.Thread):
 
     def stop(self):
         self._stop = True
+        self.active = False
+
+    def is_active(self):
+        return self.active
 
     def run_ffmpeg(self, cmd, pass_count):
         # Running FFMPEG
+        self.active = True
         pipe = subprocess.Popen(cmd.encode(locale.getpreferredencoding()), shell = True, stdout=subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True)
         line = ""
 
@@ -63,6 +69,7 @@ class cSceneDetect(GObject.GObject, threading.Thread):
 
     def run(self):
         if self.file_not_found:
+            self.active = False
             return
 
         if self.one_pass:
@@ -75,7 +82,10 @@ class cSceneDetect(GObject.GObject, threading.Thread):
         # Finally
         if not (self.one_pass) and exists(self.del_file):
             remove(self.del_file)
-        GObject.idle_add(self.signal_finish)
+
+        if not(self._stop):
+            GObject.idle_add(self.signal_finish)
+        self.active = False
 
     def signal_progress(self, percent):
         self.emit('progress', percent)
