@@ -20,6 +20,7 @@ from gcustom.durationChangeDialog import cDurationChangeDialog
 from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
+from gcustom.visualSyncDialog import cVisualSyncDialog
 from thesaurus import cThesaurus
 
 from subfile import srtFile, gen_timestamp_srt_from_source
@@ -760,6 +761,8 @@ class Controller:
             self.on_TVCM_Delete(None)
 
     def on_new_button_clicked(self, widget):
+        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video.videoDuration)
+        return
         self.set_video_widget()
         dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': ''})
         res = dialog.run()
