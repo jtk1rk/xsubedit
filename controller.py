@@ -124,6 +124,7 @@ class Controller:
         view['newFileTB'].connect('clicked', self.on_new_button_clicked)
         view['saveFileTB'].connect('clicked', self.on_save_button_clicked)
         view['checkTB'].connect('clicked', self.on_TB_check_clicked)
+        view['visualSyncTB'].connect('clicked', self.on_TB_visual_sync)
         view['importSRTTB'].connect('clicked', self.on_TB_import_srt)
         view['subtitles'].connect('key-release-event', self.on_key_release)
         self.tv_cursor_changed_id  = view['subtitles'].connect('cursor_changed', self.on_tv_cursor_changed)
@@ -254,6 +255,25 @@ class Controller:
         self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
 
         self.init_done = True
+
+    def on_TB_visual_sync(self, sender):
+        if self.view['audio'].videoDuration == 0:
+            return
+        subs = self.model.subtitles.get_sub_list()
+        for sub in subs:
+            sub.startTime_before_sync = int(sub.startTime)
+            sub.stopTime_before_sync = int(sub.stopTime)
+        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video.videoDuration)
+        dialog.run()
+        if dialog.response == Gtk.ResponseType.OK:
+            # FIX: add to history so undo is possible
+            self.view['audio'].invalidateCanvas()
+            self.view['audio'].queue_draw()
+        else:
+            for sub in subs:
+                sub.startTime = sub.startTime_before_sync
+                sub.stopTime = sub.stopTime_before_sync
+        dialog.destroy()
 
     def on_VCM(self, widget, option):
         if option == 'VCM-TwoPassSD':
@@ -761,8 +781,6 @@ class Controller:
             self.on_TVCM_Delete(None)
 
     def on_new_button_clicked(self, widget):
-        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video.videoDuration)
-        return
         self.set_video_widget()
         dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': ''})
         res = dialog.run()

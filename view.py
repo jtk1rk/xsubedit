@@ -91,6 +91,9 @@ class View(Gtk.Window):
         self.widgets['importSRTTB'] = Gtk.ToolButton()
         self.widgets['importSRTTB'].set_tooltip_text('Import Srt')
         self.widgets['importSRTTB'].set_stock_id(Gtk.STOCK_ADD)
+        self.widgets['visualSyncTB'] = Gtk.ToolButton()
+        self.widgets['visualSyncTB'].set_tooltip_text('Visual Sync')
+        self.widgets['visualSyncTB'].set_stock_id(Gtk.STOCK_REFRESH)
         self.widgets['checkTB'] = Gtk.ToolButton()
         self.widgets['checkTB'].set_tooltip_text('Check Subtitles')
         self.widgets['checkTB'].set_stock_id(Gtk.STOCK_SPELL_CHECK)
@@ -111,6 +114,7 @@ class View(Gtk.Window):
         self.widgets['toolbar'].add(self.widgets['separator3TB'])
         self.widgets['toolbar'].add(self.widgets['importSRTTB'])
         self.widgets['toolbar'].add(self.widgets['checkTB'])
+        self.widgets['toolbar'].add(self.widgets['visualSyncTB'])
 
         # AudioView Context Menu
         self.widgets['AudioContextMenu'] = Gtk.Menu()

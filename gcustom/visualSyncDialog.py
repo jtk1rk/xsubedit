@@ -165,7 +165,6 @@ class cSyncAudioWidget(Gtk.EventBox):
             return
 
         if self.mode == 'SCM-Move-One':
-            print msec - origmsec
             self.overSub.startTime = int(self.overSub.startTime_orig) + (msec - origmsec)
             self.overSub.stopTime = int(self.overSub.stopTime_orig) + (msec - origmsec)
         elif self.mode == 'SCM-Move-All':
@@ -628,24 +627,32 @@ class cSyncAudioWidget(Gtk.EventBox):
             cc.line_to(viewportPos, height)
             cc.stroke()
 
-class cVisualSyncDialog(Gtk.Window):
+class cVisualSyncDialog(Gtk.Dialog):
     def __init__(self, parent, subsModel, audioModel, sceneModel, videoDuration):
         super(cVisualSyncDialog, self).__init__()
         self.parent = parent
         self.set_title = 'Visual Sync'
         self.set_modal(True)
+        self.response = None
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
-        self.set_size_request(1000, 350)
+        self.set_size_request(1000, 320)
         self.set_resizable(True)
         self.audioWidget = cSyncAudioWidget()
         self.audioWidget.subtitlesModel = subsModel
         self.audioWidget.videoDuration = videoDuration / 1000000.0
         self.audioWidget.audioModel = audioModel
         self.audioWidget.sceneModel = sceneModel
+        self.audioWidget.set_size_request(1000,320)
+        button_cancel = Gtk.Button('Cancel')
+        button_ok = Gtk.Button('OK')
         vbox = Gtk.VBox()
-        vbox.add(self.audioWidget)
-        self.add(vbox)
+        hbox = Gtk.HBox()
+        vbox.pack_start(self.audioWidget, True, True, 3)
+        vbox.pack_end(hbox, False, False, 1)
+        hbox.pack_end(button_cancel, False, False, 1)
+        hbox.pack_end(button_ok, False, False, 1)
+        self.vbox.pack_start(vbox, True, True, 1)
         self.SCM = {}
         self.SCM['SCM-Menu'] = Gtk.Menu()
         self.SCM['SCM-Move-One'] = Gtk.MenuItem('Move selected subtitle')
@@ -661,17 +668,25 @@ class cVisualSyncDialog(Gtk.Window):
         self.SCM['SCM-Move-All-After'].show()
         self.SCM['SCM-Strech-Selected'].show()
 
-        self.audioWidget.connect('right-click', self.on_audio_right_click)
         self.connect('button-release-event', self.on_button_release)
         self.connect('key-release-event', self.on_key_release_event)
         self.SCM['SCM-Move-One'].connect('activate', self.on_SCM, 'SCM-Move-One')
         self.SCM['SCM-Move-All'].connect('activate', self.on_SCM, 'SCM-Move-All')
         self.SCM['SCM-Move-All-After'].connect('activate', self.on_SCM, 'SCM-Move-All-After')
         self.SCM['SCM-Strech-Selected'].connect('activate', self.on_SCM, 'SCM-Strech-Selected')
+        button_ok.connect('clicked', self.on_button_clicked, 'ok')
+        button_cancel.connect('clicked', self.on_button_clicked, 'cancel')
         self.show_all()
+        self.show()
 
-    def on_audio_right_click(self, sender, event):
-        pass
+    def on_button_clicked(self, widget, value):
+        if value == 'ok':
+            self.response = Gtk.ResponseType.OK
+        if value == 'cancel':
+            self.response = Gtk.ResponseType.CANCEL
+        else:
+            self.result = Gtk.ResponseType.NONE
+        self.close()
 
     def on_key_release_event(self, sender, event):
         pass
