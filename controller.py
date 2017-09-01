@@ -264,7 +264,7 @@ class Controller:
             sub.startTime_before_sync = int(sub.startTime)
             sub.stopTime_before_sync = int(sub.stopTime)
         slist_before = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
-        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video.videoDuration)
+        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video, self.model.video.videoDuration)
         dialog.run()
         if dialog.response == Gtk.ResponseType.OK:
             slist_after = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]

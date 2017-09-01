@@ -628,14 +628,16 @@ class cSyncAudioWidget(Gtk.EventBox):
             cc.stroke()
 
 class cVisualSyncDialog(Gtk.Dialog):
-    def __init__(self, parent, subsModel, audioModel, sceneModel, videoDuration):
+    def __init__(self, parent, subsModel, audioModel, sceneModel, videoModel, videoDuration):
         super(cVisualSyncDialog, self).__init__()
         self.parent = parent
         self.set_title = 'Visual Sync'
         self.set_modal(True)
         self.response = None
-        self.set_transient_for(parent)
-        self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+        self.videoModel = videoModel
+        self.videoDuration = videoDuration
+        #self.set_transient_for(parent)
+        #self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         self.set_size_request(1000, 320)
         self.set_resizable(True)
         self.audioWidget = cSyncAudioWidget()
@@ -659,21 +661,37 @@ class cVisualSyncDialog(Gtk.Dialog):
         self.SCM['SCM-Move-All'] = Gtk.MenuItem('Move all Subtitles')
         self.SCM['SCM-Move-All-After'] = Gtk.MenuItem('Move subtitle and all after selected')
         self.SCM['SCM-Strech-Selected'] = Gtk.MenuItem('Stretch subtitles to follow selected')
+        self.SCM['SCM-Goto-First-Sub'] = Gtk.MenuItem('Go to First Subtitle')
+        self.SCM['SCM-Goto-Last-Sub'] = Gtk.MenuItem('Go to Last Subtitle')
+        self.SCM['SCM-Full-View'] = Gtk.MenuItem('Full View')
         self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-One'])
         self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All'])
         self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All-After'])
         self.SCM['SCM-Menu'].add(self.SCM['SCM-Strech-Selected'])
+        self.SCM['SCM-Menu'].add(Gtk.SeparatorMenuItem)
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-First-Sub'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-Last-Sub'])
+        self.SCM['SCM-Menu'].add(Gtk.SeparatorMenuItem)
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Full-View'])
+
         self.SCM['SCM-Move-One'].show()
         self.SCM['SCM-Move-All'].show()
         self.SCM['SCM-Move-All-After'].show()
         self.SCM['SCM-Strech-Selected'].show()
+        self.SCM['SCM-Goto-Last-Sub'].show()
+        self.SCM['SCM-Goto-First-Sub'].show()
+        self.SCM['SCM-Full-View'].show()
 
         self.connect('button-release-event', self.on_button_release)
+        self.connect('key-press-event', self.on_key_press_event)
         self.connect('key-release-event', self.on_key_release_event)
         self.SCM['SCM-Move-One'].connect('activate', self.on_SCM, 'SCM-Move-One')
         self.SCM['SCM-Move-All'].connect('activate', self.on_SCM, 'SCM-Move-All')
         self.SCM['SCM-Move-All-After'].connect('activate', self.on_SCM, 'SCM-Move-All-After')
         self.SCM['SCM-Strech-Selected'].connect('activate', self.on_SCM, 'SCM-Strech-Selected')
+        self.SCM['SCM-Goto-First-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-First-Sub')
+        self.SCM['SCM-Goto-Last-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-Last-Sub')
+        self.videoModel.connect('position-update', self.on_video_position)
         button_ok.connect('clicked', self.on_button_clicked, 'ok')
         button_cancel.connect('clicked', self.on_button_clicked, 'cancel')
         self.show_all()
@@ -688,8 +706,28 @@ class cVisualSyncDialog(Gtk.Dialog):
             self.result = Gtk.ResponseType.NONE
         self.close()
 
+    def on_key_press_event(self, sender, event):
+        return True
+
     def on_key_release_event(self, sender, event):
-        pass
+        if event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
+            if self.videoDuration == 0:
+                return
+            if self.videoModel.is_playing():
+                self.videoModel.pause()
+            else:
+                self.videoModel.set_videoPosition(int(self.audioWidget.videoSegment[0]) / float(self.videoDuration))
+                self.videoModel.set_segment((self.audioWidget.videoSegment[0],  self.videoDuration))
+                self.videoModel.play()
+        elif event.keyval == Gdk.KEY_F1:
+            if self.videoDuration == 0:
+                return
+            self.videoModel.set_videoPosition(int(self.audioWidget.videoSegment[0]) / float(self.videoDuration))
+            self.videoModel.set_segment(self.audioWidget.videoSegment)
+            self.videoModel.play()
+        elif event.keyval == Gdk.KEY_Escape:
+            self.videoModel.pause()
+        return
 
     def on_button_release(self, sender, event):
         if event.button == 3 and self.audioWidget.mode == None:
@@ -701,3 +739,29 @@ class cVisualSyncDialog(Gtk.Dialog):
         for sub in subs:
             sub.startTime_orig = int(sub.startTime)
             sub.stopTime_orig = int(sub.stopTime)
+
+
+    def on_video_position(self, sender, position):
+        self.audioWidget.pos = self.parent['audio'].pos
+
+        # Follow video position in audioview
+        pos = self.audioWidget.pos / float(self.audioWidget.videoDuration)
+        vup = self.audioWidget.viewportUpper
+        vlow = self.audioWidget.viewportLower
+        vdiff = vup - vlow
+        if pos > vlow + vdiff * 0.98 and vup < 1:
+            if pos - vdiff * 0.90 < 1:
+                self.audioWidget.viewportLower = pos - vdiff * 0.10
+                self.audioWidget.viewportUpper = pos + vdiff * 0.90
+            else:
+                self.audioWidget.viewportUpper = 1
+                self.audioWidget.viewportLower = 1 - vdiff
+            self.audioWidget.queue_draw()
+        if pos < vlow:
+            if pos - vdiff * 0.10 > 0:
+                self.audioWidget.viewportLower = pos - vdiff * 0.10
+                self.audioWidget.viewportUpper = pos + vdiff * 0.90
+            else:
+                self.audioWidget.viewportLower = 0
+                self.audioWidget.viewportUpper = vdiff
+            self.audioWidget.queue_draw()
