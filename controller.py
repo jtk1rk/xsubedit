@@ -263,10 +263,16 @@ class Controller:
         for sub in subs:
             sub.startTime_before_sync = int(sub.startTime)
             sub.stopTime_before_sync = int(sub.stopTime)
+        slist_before = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
         dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video.videoDuration)
         dialog.run()
         if dialog.response == Gtk.ResponseType.OK:
-            # FIX: add to history so undo is possible
+            slist_after = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
+            slist_diff = []
+            for i in xrange(len(subs)):
+                if slist_before[i][1] != slist_after[i][1] or slist_before[i][2] != slist_after[i][2]:
+                    slist_diff.append((subs[i], int(slist_before[i][1]), int(slist_before[i][2]), int(slist_after[i][1]), int(slist_after[i][2])))
+            self.history.add(('menu-change-time', slist_diff))
             self.view['audio'].invalidateCanvas()
             self.view['audio'].queue_draw()
         else:

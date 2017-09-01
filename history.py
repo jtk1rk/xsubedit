@@ -39,20 +39,20 @@ class cHistory(GObject.GObject):
         tmp = self.data[self.index]
         self.index +=1
         self.emit_state()
-        return tmp 
+        return tmp
 
     def emit_state(self):
         if self.is_empty():
-            self.emit('history-update',  self.HIST_EMPTY)
+            self.emit('history-update', self.HIST_EMPTY)
             return
         if self.is_at_intermediate_element():
-            self.emit('history-update',  self.HIST_AT_INTERMEDIATE_ELEMENT)
+            self.emit('history-update', self.HIST_AT_INTERMEDIATE_ELEMENT)
         elif self.is_at_first_element():
             self.emit('history-update', self.HIST_AT_FIRST_ELEMENT)
         elif self.is_at_last_element():
-            self.emit('history-update',  self.HIST_AT_LAST_ELEMENT)
+            self.emit('history-update', self.HIST_AT_LAST_ELEMENT)
 
     def add(self,  value):
-        self.data.append(self.index,  value)
+        self.data.append(self.index, value)
         self.index += 1
         self.emit_state()

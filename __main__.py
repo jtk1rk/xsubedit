@@ -11,5 +11,5 @@ import sys
 #set_process_name()
 
 GObject.threads_init()
-win = Controller(Model(), View('xSubEdit 1.8.1'))
+win = Controller(Model(), View('xSubEdit 1.8.5'))
 Gtk.main()
