@@ -385,15 +385,6 @@ class Subtitles(GObject.GObject):
                 break
         return res
 
-    def inside_sub_old(self, msec):
-        # allagh me bisect sto search
-        tmpSub = None
-        for item in self.subs:
-            if item[self.COL_SUB].startTime <= msec <= item[self.COL_SUB].stopTime:
-                tmpSub = item[self.COL_SUB]
-                break
-        return tmpSub
-
     def inside_sub(self, msec):
         if len(self.subs) == 0:
             return None
@@ -520,6 +511,9 @@ class Subtitles(GObject.GObject):
     def clear_changed(self):
         for row in self.subs:
             row[self.COL_SUB].clear_changed()
+
+    def get_sub_list(self):
+        return [item[self.COL_SUB] for item in self.subs]
 
     def list_subs_overlapping_window(self, timeLow, timeHigh):
         tl = timeStamp(timeLow)

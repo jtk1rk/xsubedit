@@ -3,7 +3,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gdk, GObject
-from subtitles import subRec
+from subtitles import subRec, timeStamp
 from bisect import bisect
 from time import time
 import cairo
@@ -42,7 +42,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.mouse_last_click_coords = None
         self.ms_to_coord_factor = 0
         self.low_ms_coord = 0
-        self.dragging_diff = None
+        self.mode = None
 
         # Creating internal properties
         self.__viewportLower = None
@@ -153,19 +153,43 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.mouse_event = None
         self.dragging = False
         self.dragging_sub = None
-        self.dragging_diff = None
+        if self.mode == 'SCM-Move-One' or self.mode == 'SCM-Move-All' or self.mode == 'SCM-Move-All-After':
+            self.mode = None
+        subs = self.subtitlesModel.get_sub_list()
+        for sub in subs:
+            sub.stopTime_orig = int(sub.stopTime)
+            sub.startTime_orig = int(sub.startTime)
 
     def on_dragging(self, origmsec, msec):
         if self.overSub == None:
             return
-        if self.dragging_diff is None:
-            self.dragging_diff = origmsec - int(self.overSub.startTime)
-        duration = int(self.overSub.duration)
-        self.overSub.stopTime = (msec - self.dragging_diff) + duration
-        self.overSub.startTime = msec - self.dragging_diff
-        self.isCanvasBufferValid = False
-        self.queue_draw()
-        self.emit('sub-updated', self.overSub)
+
+        if self.mode == 'SCM-Move-One':
+            print msec - origmsec
+            self.overSub.startTime = int(self.overSub.startTime_orig) + (msec - origmsec)
+            self.overSub.stopTime = int(self.overSub.stopTime_orig) + (msec - origmsec)
+        elif self.mode == 'SCM-Move-All':
+            for sub in self.subtitlesModel.get_sub_list():
+                sub.startTime = int(sub.startTime_orig) + (msec - origmsec)
+                sub.stopTime = int(sub.stopTime_orig) + (msec - origmsec)
+        elif self.mode == 'SCM-Move-All-After':
+            subs = self.subtitlesModel.get_sub_list()
+            for sub in subs[subs.index(self.overSub):]:
+                sub.startTime = int(sub.startTime_orig) + (msec - origmsec)
+                sub.stopTime = int(sub.stopTime_orig) + (msec - origmsec)
+        elif self.mode == 'SCM-Strech-Selected':
+            subs = self.subtitlesModel.get_sub_list()
+            self.overSub.startTime = int(self.overSub.startTime_orig) + (msec - origmsec)
+            self.overSub.stopTime = int(self.overSub.stopTime_orig) + (msec - origmsec)
+            factor = (int(self.overSub.startTime) - int(subs[0].startTime)) / float( int(self.overSub.startTime_orig) - int(subs[0].startTime) )
+            for sub in subs[:subs.index(self.overSub)]: # calculate strech here
+                sub.startTime = int( (int(sub.startTime_orig) - int(subs[0].startTime)) * factor + int(subs[0].startTime) )
+                sub.stopTime = int( (int(sub.stopTime_orig) - int(subs[0].startTime)) * factor + int(subs[0].startTime) )
+
+        if not (self.mode is None):
+            self.isCanvasBufferValid = False
+            self.queue_draw()
+            self.emit('sub-updated', self.overSub)
 
     def on_motion_notify(self, widget, event):
         if self.videoDuration == 0:
@@ -174,7 +198,6 @@ class cSyncAudioWidget(Gtk.EventBox):
         mouse_msec = self.get_mouse_msec(event.x)
         if self.mouse_button == self.BUTTON_LEFT and mouse_msec != self.mouse_click_coords[0] and not self.dragging:
             self.dragging = True
-            self.dragging_diff = None
 
         if self.dragging:
             target_msec = mouse_msec
@@ -615,16 +638,36 @@ class cVisualSyncDialog(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.set_size_request(1000, 350)
         self.set_resizable(True)
-        audioWidget = cSyncAudioWidget()
-        audioWidget.subtitlesModel = subsModel
-        audioWidget.videoDuration = videoDuration / 1000000.0
-        audioWidget.audioModel = audioModel
-        audioWidget.sceneModel = sceneModel
+        self.audioWidget = cSyncAudioWidget()
+        self.audioWidget.subtitlesModel = subsModel
+        self.audioWidget.videoDuration = videoDuration / 1000000.0
+        self.audioWidget.audioModel = audioModel
+        self.audioWidget.sceneModel = sceneModel
         vbox = Gtk.VBox()
-        vbox.add(audioWidget)
+        vbox.add(self.audioWidget)
         self.add(vbox)
-        audioWidget.connect('right-click', self.on_audio_right_click)
+        self.SCM = {}
+        self.SCM['SCM-Menu'] = Gtk.Menu()
+        self.SCM['SCM-Move-One'] = Gtk.MenuItem('Move selected subtitle')
+        self.SCM['SCM-Move-All'] = Gtk.MenuItem('Move all Subtitles')
+        self.SCM['SCM-Move-All-After'] = Gtk.MenuItem('Move subtitle and all after selected')
+        self.SCM['SCM-Strech-Selected'] = Gtk.MenuItem('Stretch subtitles to follow selected')
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-One'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All-After'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Strech-Selected'])
+        self.SCM['SCM-Move-One'].show()
+        self.SCM['SCM-Move-All'].show()
+        self.SCM['SCM-Move-All-After'].show()
+        self.SCM['SCM-Strech-Selected'].show()
+
+        self.audioWidget.connect('right-click', self.on_audio_right_click)
+        self.connect('button-release-event', self.on_button_release)
         self.connect('key-release-event', self.on_key_release_event)
+        self.SCM['SCM-Move-One'].connect('activate', self.on_SCM, 'SCM-Move-One')
+        self.SCM['SCM-Move-All'].connect('activate', self.on_SCM, 'SCM-Move-All')
+        self.SCM['SCM-Move-All-After'].connect('activate', self.on_SCM, 'SCM-Move-All-After')
+        self.SCM['SCM-Strech-Selected'].connect('activate', self.on_SCM, 'SCM-Strech-Selected')
         self.show_all()
 
     def on_audio_right_click(self, sender, event):
@@ -632,3 +675,14 @@ class cVisualSyncDialog(Gtk.Window):
 
     def on_key_release_event(self, sender, event):
         pass
+
+    def on_button_release(self, sender, event):
+        if event.button == 3 and self.audioWidget.mode == None:
+            self.SCM['SCM-Menu'].popup(None, None, None, None, event.button, event.time)
+
+    def on_SCM(self, sender, value):
+        self.audioWidget.mode = value
+        subs = self.audioWidget.subtitlesModel.get_sub_list()
+        for sub in subs:
+            sub.startTime_orig = int(sub.startTime)
+            sub.stopTime_orig = int(sub.stopTime)
