@@ -12,4 +12,3 @@ class cMessageDialog(Gtk.MessageDialog):
         self.set_transient_for(parent)
         self.add_button('_OK', Gtk.ResponseType.OK)
         self.set_resizable(False)
-

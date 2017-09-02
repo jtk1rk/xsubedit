@@ -21,6 +21,7 @@ from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
 from gcustom.visualSyncDialog import cVisualSyncDialog
+from gcustom.messageDialog import cMessageDialog
 from thesaurus import cThesaurus
 
 from subfile import srtFile, gen_timestamp_srt_from_source
@@ -260,6 +261,11 @@ class Controller:
         if self.view['audio'].videoDuration == 0:
             return
         subs = self.model.subtitles.get_sub_list()
+        if len(subs) == 0:
+            message = cMessageDialog(self.view, Gtk.MessageType.ERROR, 'No subtitles found to synchronize.')
+            message.run()
+            message.destroy()
+            return
         for sub in subs:
             sub.startTime_before_sync = int(sub.startTime)
             sub.stopTime_before_sync = int(sub.stopTime)
