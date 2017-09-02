@@ -61,6 +61,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.__scale_linear_audio = 1
 
         # Init Class Variables
+        self.mouse_over_sub = None
         self.scale_linear_audio = 1
         self.waveformBuffer = None
         self.canvasBuffer = None
@@ -140,6 +141,14 @@ class cSyncAudioWidget(Gtk.EventBox):
 
         if self.mouse_button == self.BUTTON_RIGHT:
             self.emit('right-click', self.mouse_event)
+
+    def over_sub_check(self, mousex):
+        # bisect
+        self.mouse_over_sub = None
+        for sub in self.subList:
+            if sub.startTime - self.mspp * 2 <= self.get_mouse_msec(mousex) <= sub.stopTime + self.mspp * 2:
+                self.mouse_over_sub = sub
+                break
 
     def on_button_release(self, widget, event):
         if not self.dragging:
@@ -642,6 +651,7 @@ class cVisualSyncDialog(Gtk.Dialog):
         self.set_resizable(True)
         self.textview = Gtk.TextView()
         self.textview.set_size_request(-1, 50)
+        self.textview.set_sensitive(False)
         self.audioWidget = cSyncAudioWidget()
         self.audioWidget.subtitlesModel = subsModel
         self.audioWidget.videoDuration = videoDuration / 1000000.0
@@ -700,6 +710,7 @@ class cVisualSyncDialog(Gtk.Dialog):
         self.SCM['SCM-Goto-Last-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-Last-Sub')
         self.SCM['SCM-Full-View'].connect('activate', self.on_SCM, 'SCM-Full-View')
         self.videoModel.connect('position-update', self.on_video_position)
+        self.connect('motion-notify-event', self.on_motion_notify)
         button_ok.connect('clicked', self.on_button_clicked, 'ok')
         button_cancel.connect('clicked', self.on_button_clicked, 'cancel')
         self.show_all()
@@ -790,3 +801,11 @@ class cVisualSyncDialog(Gtk.Dialog):
                 self.audioWidget.viewportLower = 0
                 self.audioWidget.viewportUpper = vdiff
             self.audioWidget.queue_draw()
+
+    def on_motion_notify(self, widget, event):
+        self.audioWidget.over_sub_check(event.x)
+        if not ( self.audioWidget.mouse_over_sub is None ):
+            text = self.audioWidget.mouse_over_sub.text.split()[:2]
+            self.textview.get_buffer().set_text('\n'.join(text))
+        else:
+            self.textview.get_buffer().set_text('')
