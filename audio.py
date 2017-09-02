@@ -20,7 +20,6 @@ class StretchableList(list):
 
 class Audio(object):
     data = []
-    width = 100
     cache = (0,0,0,[])
     maxv = 0
 
@@ -29,6 +28,7 @@ class Audio(object):
             return
         self.__hiData = hiAudio
         self.__lowData = lowAudio
+        self.width = 100
         self.hiData = self.__hiData.copy()
         self.lowData = self.__lowData.copy()
         self.dataSize = len(self.hiData)
@@ -53,6 +53,9 @@ class Audio(object):
 
     def set_width(self, width):
         self.width = width
+
+    def get_width(self):
+        return self.width
 
     def get_data(self, lower, upper):
         if self.width == 0:
@@ -80,4 +83,3 @@ class Audio(object):
                     res.append( ( self.hiData[iround(lowerIDX + i / r)], self.lowData[iround(lowerIDX + i / r)] ) )
             self.cache = (lower, upper, self.width, res)
             return res
-

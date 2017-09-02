@@ -10,15 +10,15 @@ import cairo
 
 
 class cSyncAudioWidget(Gtk.EventBox):
-    __gsignals__ = {       'viewpos-update': (GObject.SIGNAL_RUN_LAST, None, (int,)),
-                              'sub-updated': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
-                              'right-click': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
-                              'dragged-sub': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)),
-                              'vertical-scale-update': (GObject.SIGNAL_RUN_LAST, None, (float,)),
-                              'active-sub-changed' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
+    __gsignals__ = {       'sync-viewpos-update': (GObject.SIGNAL_RUN_LAST, None, (int,)),
+                              'sync-sub-updated': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
+                              'sync-right-click': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
+                              'sync-dragged-sub': (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT)),
+                              'sync-vertical-scale-update': (GObject.SIGNAL_RUN_LAST, None, (float,)),
+                              'sync-active-sub-changed' : (GObject.SIGNAL_RUN_LAST, None, (GObject.TYPE_PYOBJECT, )),
                               }
 
-    def __init__(self):
+    def __init__(self, container, replaceWidget):
         # Inits
         super(cSyncAudioWidget, self).__init__()
         self.drawingArea = Gtk.DrawingArea()
@@ -43,6 +43,9 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.ms_to_coord_factor = 0
         self.low_ms_coord = 0
         self.mode = None
+        self._container = container
+        self._replaceWidget = replaceWidget
+        self.save = False
 
         # Creating internal properties
         self.__viewportLower = None
@@ -90,6 +93,56 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.stickZoom = False
         self.scenes = []
 
+        self.SCM = {}
+        self.SCM['SCM-Menu'] = Gtk.Menu()
+        self.SCM['SCM-Move-One'] = Gtk.MenuItem('Move selected subtitle')
+        self.SCM['SCM-Move-All'] = Gtk.MenuItem('Move all Subtitles')
+        self.SCM['SCM-Move-All-After'] = Gtk.MenuItem('Move subtitle and all after selected')
+        self.SCM['SCM-Strech-Selected'] = Gtk.MenuItem('Stretch subtitles to follow selected')
+        self.SCM['SCM-Goto-First-Sub'] = Gtk.MenuItem('Go to First Subtitle')
+        self.SCM['SCM-Goto-Last-Sub'] = Gtk.MenuItem('Go to Last Subtitle')
+        self.SCM['SCM-Full-View'] = Gtk.MenuItem('Full View')
+        self.SCM['SCM-Save-Exit'] = Gtk.MenuItem('Accept & Exit Sync Mode')
+        self.SCM['SCM-Cancel-Exit'] = Gtk.MenuItem('Discard & Exit Sync Mode')
+        sep1 = Gtk.SeparatorMenuItem()
+        sep2 = Gtk.SeparatorMenuItem()
+        sep3 = Gtk.SeparatorMenuItem()
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-One'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All-After'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Strech-Selected'])
+        self.SCM['SCM-Menu'].add(sep1)
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-First-Sub'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-Last-Sub'])
+        self.SCM['SCM-Menu'].add(sep2)
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Full-View'])
+        self.SCM['SCM-Menu'].add(sep3)
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Save-Exit'])
+        self.SCM['SCM-Menu'].add(self.SCM['SCM-Cancel-Exit'])
+
+        self.SCM['SCM-Move-One'].show()
+        self.SCM['SCM-Move-All'].show()
+        self.SCM['SCM-Move-All-After'].show()
+        self.SCM['SCM-Strech-Selected'].show()
+        self.SCM['SCM-Goto-Last-Sub'].show()
+        self.SCM['SCM-Goto-First-Sub'].show()
+        self.SCM['SCM-Full-View'].show()
+        sep1.show()
+        sep2.show()
+        sep3.show()
+        self.SCM['SCM-Save-Exit'].show()
+        self.SCM['SCM-Cancel-Exit'].show()
+
+        self.SCM['SCM-Move-One'].connect('activate', self.on_SCM, 'SCM-Move-One')
+        self.SCM['SCM-Move-All'].connect('activate', self.on_SCM, 'SCM-Move-All')
+        self.SCM['SCM-Move-All-After'].connect('activate', self.on_SCM, 'SCM-Move-All-After')
+        self.SCM['SCM-Strech-Selected'].connect('activate', self.on_SCM, 'SCM-Strech-Selected')
+        self.SCM['SCM-Goto-First-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-First-Sub')
+        self.SCM['SCM-Goto-Last-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-Last-Sub')
+        self.SCM['SCM-Full-View'].connect('activate', self.on_SCM, 'SCM-Full-View')
+        self.SCM['SCM-Save-Exit'].connect('activate', self.on_SCM, 'SCM-Save-Exit')
+        self.SCM['SCM-Cancel-Exit'].connect('activate', self.on_SCM, 'SCM-Cancel-Exit')
+
         # Connections
         self.drawingArea.connect('draw', self.on_draw)
         self.drawingArea.connect('size-allocate', self.on_size_allocate)
@@ -97,6 +150,11 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.connect('button-release-event', self.on_button_release)
         self.connect('scroll-event', self.on_scroll)
         self.connect('motion-notify-event', self.on_motion_notify)
+
+        self._container.pack_start(self, True, True, 0)
+        self.show()
+        self.show_all()
+        self._replaceWidget.hide()
 
     def set_scenes(self, ref):
         self.scenes = ref
@@ -116,6 +174,9 @@ class cSyncAudioWidget(Gtk.EventBox):
         elif event.button == 3:
             self.mouse_button = self.BUTTON_RIGHT
             self.mouse_event = event
+
+            if self.mode == None:
+                self.SCM['SCM-Menu'].popup(None, None, None, None, event.button, event.time)
 
     def check_click(self):
         if self.mouse_click_type == self.DOUBLE_CLICK and self.overSub != None:
@@ -140,7 +201,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             self.queue_draw()
 
         if self.mouse_button == self.BUTTON_RIGHT:
-            self.emit('right-click', self.mouse_event)
+            self.emit('sync-right-click', self.mouse_event)
 
     def over_sub_check(self, mousex):
         # bisect
@@ -155,7 +216,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             self.check_click()
         else:
             if self.dragging_sub != None:
-                self.emit('dragged-sub', self.dragging_sub, self.overSub)
+                self.emit('sync-dragged-sub', self.dragging_sub, self.overSub)
         self.mouse_button = None
         self.mouse_click_coords =(None, None)
         self.mouse_click_type = None
@@ -197,11 +258,16 @@ class cSyncAudioWidget(Gtk.EventBox):
         if not (self.mode is None):
             self.isCanvasBufferValid = False
             self.queue_draw()
-            self.emit('sub-updated', self.overSub)
+            self.emit('sync-sub-updated', self.overSub)
 
     def on_motion_notify(self, widget, event):
         if self.videoDuration == 0:
             return
+
+        mos = self.mouse_over_sub
+        self.over_sub_check(event.x)
+        if mos != self.mouse_over_sub:
+            self.queue_draw()
 
         mouse_msec = self.get_mouse_msec(event.x)
         if self.mouse_button == self.BUTTON_LEFT and mouse_msec != self.mouse_click_coords[0] and not self.dragging:
@@ -270,7 +336,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             return
 
         moveval = 25 * self.mspp
-        if event.direction == Gdk.ScrollDirection.DOWN and self.highms < self.videoDuration + moveval:
+        if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.videoDuration:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
         elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:
@@ -304,7 +370,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             self.audioModel.set_scale('linear', self.__scale_linear_audio)
             self.isWaveformBufferValid = False
             self.queue_draw()
-            self.emit('vertical-scale-update', self.__scale_linear_audio)
+            self.emit('sync-vertical-scale-update', self.__scale_linear_audio)
 
     @property
     def width(self):
@@ -351,6 +417,7 @@ class cSyncAudioWidget(Gtk.EventBox):
     @audioModel.setter
     def audioModel(self, val):
         if val != None:
+            self.orig_audioModel_width = val.get_width()
             self.__audioModel = val
             self.__audioModel.set_width(self.get_allocation().width)
             self.audioData = self.__audioModel.get_data(self.viewportLower, self.viewportUpper)
@@ -416,7 +483,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         else:
             self.videoSegment = (self.cursor, self.videoDuration)
         if self.__activeSub != val:
-            self.emit('active-sub-changed', val)
+            self.emit('sync-active-sub-changed', val)
         self.__activeSub = val
 
     @property
@@ -492,7 +559,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.cursor = low
         self.queue_draw()
         self.videoSegment = (int(self.activeSub.startTime), int(self.activeSub.stopTime))
-        self.emit('viewpos-update', int(100 * low / float(self.videoDuration)))
+        self.emit('sync-viewpos-update', int(100 * low / float(self.videoDuration)))
 
     def center_multiple_active_subs(self, startTime, stopTime):
         self.videoSegment = (int(startTime), int(stopTime))
@@ -502,7 +569,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.viewportLower = lowPerc if lowPerc >= 0 else 0
         self.viewportUpper = highPerc if highPerc <= 1 else 1
         self.queue_draw()
-        self.emit('viewpos-update', int(lowPerc * 100))
+        self.emit('sync-viewpos-update', int(lowPerc * 100))
 
     def draw_buffers(self, widget):
         if not self.isReady:
@@ -636,176 +703,50 @@ class cSyncAudioWidget(Gtk.EventBox):
             cc.line_to(viewportPos, height)
             cc.stroke()
 
-class cVisualSyncDialog(Gtk.Dialog):
-    def __init__(self, parent, subsModel, audioModel, sceneModel, videoModel, videoDuration):
-        super(cVisualSyncDialog, self).__init__()
-        self.parent = parent
-        self.set_title = 'Visual Sync'
-        self.set_modal(True)
-        self.response = None
-        self.videoModel = videoModel
-        self.videoDuration = videoDuration
-        #self.set_transient_for(parent)
-        #self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
-        self.set_size_request(1000, 320)
-        self.set_resizable(True)
-        self.textview = Gtk.TextView()
-        self.textview.set_size_request(-1, 50)
-        self.textview.set_sensitive(False)
-        self.audioWidget = cSyncAudioWidget()
-        self.audioWidget.subtitlesModel = subsModel
-        self.audioWidget.videoDuration = videoDuration / 1000000.0
-        self.audioWidget.audioModel = audioModel
-        self.audioWidget.sceneModel = sceneModel
-        self.audioWidget.set_size_request(1000,320)
-        button_cancel = Gtk.Button('Cancel')
-        button_ok = Gtk.Button('OK')
-        vbox = Gtk.VBox()
-        hbox = Gtk.HBox()
-        vbox.pack_start(self.audioWidget, True, True, 3)
-        vbox.pack_end(hbox, False, False, 1)
-        hbox.pack_end(button_cancel, False, False, 1)
-        hbox.pack_end(button_ok, False, False, 1)
-        hbox.pack_start(self.textview, False, False, 1)
-        self.vbox.pack_start(vbox, True, True, 1)
-        self.SCM = {}
-        self.SCM['SCM-Menu'] = Gtk.Menu()
-        self.SCM['SCM-Move-One'] = Gtk.MenuItem('Move selected subtitle')
-        self.SCM['SCM-Move-All'] = Gtk.MenuItem('Move all Subtitles')
-        self.SCM['SCM-Move-All-After'] = Gtk.MenuItem('Move subtitle and all after selected')
-        self.SCM['SCM-Strech-Selected'] = Gtk.MenuItem('Stretch subtitles to follow selected')
-        self.SCM['SCM-Goto-First-Sub'] = Gtk.MenuItem('Go to First Subtitle')
-        self.SCM['SCM-Goto-Last-Sub'] = Gtk.MenuItem('Go to Last Subtitle')
-        self.SCM['SCM-Full-View'] = Gtk.MenuItem('Full View')
-        sep1 = Gtk.SeparatorMenuItem()
-        sep2 = Gtk.SeparatorMenuItem()
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-One'])
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All'])
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Move-All-After'])
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Strech-Selected'])
-        self.SCM['SCM-Menu'].add(sep1)
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-First-Sub'])
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Goto-Last-Sub'])
-        self.SCM['SCM-Menu'].add(sep2)
-        self.SCM['SCM-Menu'].add(self.SCM['SCM-Full-View'])
-
-        self.SCM['SCM-Move-One'].show()
-        self.SCM['SCM-Move-All'].show()
-        self.SCM['SCM-Move-All-After'].show()
-        self.SCM['SCM-Strech-Selected'].show()
-        self.SCM['SCM-Goto-Last-Sub'].show()
-        self.SCM['SCM-Goto-First-Sub'].show()
-        self.SCM['SCM-Full-View'].show()
-        sep1.show()
-        sep2.show()
-
-        self.connect('button-release-event', self.on_button_release)
-        self.connect('key-press-event', self.on_key_press_event)
-        self.connect('key-release-event', self.on_key_release_event)
-        self.SCM['SCM-Move-One'].connect('activate', self.on_SCM, 'SCM-Move-One')
-        self.SCM['SCM-Move-All'].connect('activate', self.on_SCM, 'SCM-Move-All')
-        self.SCM['SCM-Move-All-After'].connect('activate', self.on_SCM, 'SCM-Move-All-After')
-        self.SCM['SCM-Strech-Selected'].connect('activate', self.on_SCM, 'SCM-Strech-Selected')
-        self.SCM['SCM-Goto-First-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-First-Sub')
-        self.SCM['SCM-Goto-Last-Sub'].connect('activate', self.on_SCM, 'SCM-Goto-Last-Sub')
-        self.SCM['SCM-Full-View'].connect('activate', self.on_SCM, 'SCM-Full-View')
-        self.videoModel.connect('position-update', self.on_video_position)
-        self.connect('motion-notify-event', self.on_motion_notify)
-        button_ok.connect('clicked', self.on_button_clicked, 'ok')
-        button_cancel.connect('clicked', self.on_button_clicked, 'cancel')
-        self.show_all()
-        self.show()
-
-    def on_button_clicked(self, widget, value):
-        if value == 'ok':
-            self.response = Gtk.ResponseType.OK
-        if value == 'cancel':
-            self.response = Gtk.ResponseType.CANCEL
-        else:
-            self.result = Gtk.ResponseType.NONE
-        self.close()
-
-    def on_key_press_event(self, sender, event):
-        return True
-
-    def on_key_release_event(self, sender, event):
-        if event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
-            if self.videoDuration == 0:
-                return
-            if self.videoModel.is_playing():
-                self.videoModel.pause()
-            else:
-                self.videoModel.set_videoPosition(int(self.audioWidget.videoSegment[0]) / float(self.videoDuration))
-                self.videoModel.set_segment((self.audioWidget.videoSegment[0],  self.videoDuration))
-                self.videoModel.play()
-        elif event.keyval == Gdk.KEY_F1:
-            if self.videoDuration == 0:
-                return
-            self.videoModel.set_videoPosition(int(self.audioWidget.videoSegment[0]) / float(self.videoDuration))
-            self.videoModel.set_segment(self.audioWidget.videoSegment)
-            self.videoModel.play()
-        elif event.keyval == Gdk.KEY_Escape:
-            self.videoModel.pause()
-        return
-
-    def on_button_release(self, sender, event):
-        if event.button == 3 and self.audioWidget.mode == None:
-            self.SCM['SCM-Menu'].popup(None, None, None, None, event.button, event.time)
+        # Draw subtitle under mouse
+        if not (self.mouse_over_sub is None):
+            fontSize = 14
+            cc.set_font_size(fontSize)
+            cc.set_source_rgba(0.8, 0.8, 0.0, 1)
+            tmpText = self.mouse_over_sub.text.splitlines()
+            if tmpText != []:
+                tmpSize = cc.text_extents(max(tmpText, key=len))
+                for i in xrange(len(tmpText)):
+                    cc.move_to(2, 20 + i * (tmpSize[3] + 5))
+                    cc.show_text(tmpText[i])
 
     def on_SCM(self, sender, value):
         if value in ['SCM-Move-All', 'SCM-Move-One', 'SCM-Move-All-After', 'SCM-Strech-Selected']:
-            self.audioWidget.mode = value
-            subs = self.audioWidget.subtitlesModel.get_sub_list()
+            self.mode = value
+            subs = self.subtitlesModel.get_sub_list()
             for sub in subs:
                 sub.startTime_orig = int(sub.startTime)
                 sub.stopTime_orig = int(sub.stopTime)
         elif value == 'SCM-Goto-First-Sub':
-            sub = self.audioWidget.subtitlesModel.get_sub_list()[0]
-            self.audioWidget.stickZoom = True
-            self.audioWidget.activeSub = sub
-            self.audioWidget.center_active_sub()
-            self.audioWidget.stickZoom = False
+            sub = self.subtitlesModel.get_sub_list()[0]
+            self.stickZoom = True
+            self.activeSub = sub
+            self.center_active_sub()
+            self.stickZoom = False
         elif value == 'SCM-Goto-Last-Sub':
-            sub = self.audioWidget.subtitlesModel.get_sub_list()[-1]
-            self.audioWidget.stickZoom = True
-            self.audioWidget.activeSub = sub
-            self.audioWidget.center_active_sub()
-            self.audioWidget.stickZoom = False
+            sub = self.subtitlesModel.get_sub_list()[-1]
+            self.stickZoom = True
+            self.activeSub = sub
+            self.center_active_sub()
+            self.stickZoom = False
         elif value == 'SCM-Full-View':
-            self.audioWidget.viewportUpper = 1
-            self.audioWidget.viewportLower = 0
-            self.audioWidget.invalidateCanvas()
-            self.audioWidget.queue_draw()
+            self.viewportUpper = 1
+            self.viewportLower = 0
+            self.invalidateCanvas()
+            self.queue_draw()
+        elif value == 'SCM-Save-Exit':
+            self.save = True
+            self.destroy()
+        elif value == 'SCM-Cancel-Exit':
+            self.save = False
+            self.destroy()
 
-    def on_video_position(self, sender, position):
-        self.audioWidget.pos = self.parent['audio'].pos
-
-        # Follow video position in audioview
-        pos = self.audioWidget.pos / float(self.audioWidget.videoDuration)
-        vup = self.audioWidget.viewportUpper
-        vlow = self.audioWidget.viewportLower
-        vdiff = vup - vlow
-        if pos > vlow + vdiff * 0.98 and vup < 1:
-            if pos - vdiff * 0.90 < 1:
-                self.audioWidget.viewportLower = pos - vdiff * 0.10
-                self.audioWidget.viewportUpper = pos + vdiff * 0.90
-            else:
-                self.audioWidget.viewportUpper = 1
-                self.audioWidget.viewportLower = 1 - vdiff
-            self.audioWidget.queue_draw()
-        if pos < vlow:
-            if pos - vdiff * 0.10 > 0:
-                self.audioWidget.viewportLower = pos - vdiff * 0.10
-                self.audioWidget.viewportUpper = pos + vdiff * 0.90
-            else:
-                self.audioWidget.viewportLower = 0
-                self.audioWidget.viewportUpper = vdiff
-            self.audioWidget.queue_draw()
-
-    def on_motion_notify(self, widget, event):
-        self.audioWidget.over_sub_check(event.x)
-        if not ( self.audioWidget.mouse_over_sub is None ):
-            text = self.audioWidget.mouse_over_sub.text.split()[:2]
-            self.textview.get_buffer().set_text('\n'.join(text))
-        else:
-            self.textview.get_buffer().set_text('')
+    def on_destroy(self, sender):
+        self.hide()
+        self._container.remove(self)
+        self.audioModel.set_width(self.orig_audioModel_width)

@@ -327,7 +327,7 @@ class cAudioWidget(Gtk.EventBox):
             return
 
         moveval = 25 * self.mspp
-        if event.direction == Gdk.ScrollDirection.DOWN and self.highms < self.videoDuration + moveval:
+        if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.videoDuration:
             self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
             self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
         elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:

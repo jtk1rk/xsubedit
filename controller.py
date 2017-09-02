@@ -20,7 +20,7 @@ from gcustom.durationChangeDialog import cDurationChangeDialog
 from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
-from gcustom.visualSyncDialog import cVisualSyncDialog
+from gcustom.visualSyncDialog import cSyncAudioWidget
 from gcustom.messageDialog import cMessageDialog
 from thesaurus import cThesaurus
 
@@ -270,22 +270,33 @@ class Controller:
             sub.startTime_before_sync = int(sub.startTime)
             sub.stopTime_before_sync = int(sub.stopTime)
         slist_before = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
-        dialog = cVisualSyncDialog(self.view, self.model.subtitles, self.model.audio, self.model.scenes, self.model.video, self.model.video.videoDuration)
-        dialog.run()
-        if dialog.response == Gtk.ResponseType.OK:
+        self.vSyncWidget = cSyncAudioWidget(self.view.widgets['audio-scale-container'], self.view['audio'])
+        self.vSyncWidget.subtitlesModel = self.model.subtitles
+        self.vSyncWidget.videoDuration = self.model.video.videoDuration / 1000000.0
+        self.vSyncWidget.audioModel = self.model.audio
+        self.vSyncWidget.sceneModel = self.model.scenes
+        self.vSyncWidget.destroy_signal_id = self.vSyncWidget.connect('destroy', self.on_vsync_destroy, slist_before)
+        self.view['visualSyncTB'].set_sensitive(False)
+
+    def on_vsync_destroy(self, widget, slist_before):
+        widget.disconnect(widget.destroy_signal_id)
+        subs = self.model.subtitles.get_sub_list()
+        if widget.save:
             slist_after = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
             slist_diff = []
             for i in xrange(len(subs)):
                 if slist_before[i][1] != slist_after[i][1] or slist_before[i][2] != slist_after[i][2]:
                     slist_diff.append((subs[i], int(slist_before[i][1]), int(slist_before[i][2]), int(slist_after[i][1]), int(slist_after[i][2])))
-            self.history.add(('menu-change-time', slist_diff))
-            self.view['audio'].invalidateCanvas()
-            self.view['audio'].queue_draw()
+            if len(slist_diff) > 0:
+                self.history.add(('menu-change-time', slist_diff))
         else:
             for sub in subs:
                 sub.startTime = sub.startTime_before_sync
                 sub.stopTime = sub.stopTime_before_sync
-        dialog.destroy()
+        self.view['audio'].show()
+        self.view['audio'].invalidateCanvas()
+        self.view['audio'].queue_draw()
+        self.view['visualSyncTB'].set_sensitive(True)
 
     def on_VCM(self, widget, option):
         if option == 'VCM-TwoPassSD':
@@ -683,10 +694,31 @@ class Controller:
             self.view['undoTB'].set_sensitive(False)
             self.view['redoTB'].set_sensitive(True)
 
-    def on_key_release(self, widget, event):
+    def on_key_release_vsync(self, widget, event):
+        if event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
+            if self.vSyncWidget.videoDuration == 0:
+                return
+            if self.model.video.is_playing():
+                self.model.video.pause()
+            else:
+                self.model.video.set_videoPosition(int(self.vSyncWidget.videoSegment[0]) / float(self.vSyncWidget.videoDuration))
+                self.model.video.set_segment((self.vSyncWidget.videoSegment[0],  self.vSyncWidget.videoDuration))
+                self.model.video.play()
+        elif event.keyval == Gdk.KEY_F1:
+            if self.vSyncWidget.videoDuration == 0:
+                return
+            self.model.video.set_videoPosition(int(self.vSyncWidget.videoSegment[0]) / float(self.vSyncWidget.videoDuration))
+            self.model.video.set_segment(self.vSyncWidget.videoSegment)
+            self.model.video.play()
+        elif event.keyval == Gdk.KEY_Escape:
+            self.model.video.pause()
+
+    def on_key_release_base(self, widget, event):
         if event.keyval == Gdk.KEY_Escape:
             self.model.video.pause()
-        elif event.keyval == Gdk.KEY_F5:
+
+    def on_key_release_normal(self, widget, event):
+        if event.keyval == Gdk.KEY_F5:
             if self.view['audio'].activeSub == None:
                 posts = timeStamp(int(self.view['audio'].cursor))
                 prev = self.model.subtitles.get_sub_before_timeStamp(posts)
@@ -791,6 +823,13 @@ class Controller:
             audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
         elif (event.keyval  == Gdk.KEY_Delete):
             self.on_TVCM_Delete(None)
+
+    def on_key_release(self, widget, event):
+        self.on_key_release_base(widget, event)
+        if hasattr(self, 'vSyncWidget') and self.vSyncWidget.props.visible:
+            self.on_key_release_vsync(widget, event)
+        else:
+            self.on_key_release_normal(widget, event)
 
     def on_new_button_clicked(self, widget):
         self.set_video_widget()
@@ -1246,15 +1285,18 @@ class Controller:
         self.view['scale'].set_value(pos)
 
     def on_scale_changed(self, widget, scroll, value):
+        wg = self.view['audio']
+        if hasattr(self, 'vSyncWidget') and self.vSyncWidget.props.visible:
+            wg = self.vSyncWidget
         posValue = value if value <= 100 else 100
         posValue = posValue if posValue >= 0 else 0
-        lower = self.view['audio'].viewportLower * 100
-        upper = self.view['audio'].viewportUpper * 100
+        lower = wg.viewportLower * 100
+        upper = wg.viewportUpper * 100
         if posValue + abs(upper - lower) > 100:
             return
-        self.view['audio'].viewportLower =  posValue / 100.0
-        self.view['audio'].viewportUpper = (posValue + abs(upper - lower)) / 100.0
-        self.view['audio'].queue_draw()
+        wg.viewportLower =  posValue / 100.0
+        wg.viewportUpper = (posValue + abs(upper - lower)) / 100.0
+        wg.queue_draw()
 
     def crash_save(self):
         if self.model.subFilename == '' :
@@ -1323,13 +1365,41 @@ class Controller:
             self.view['VideoContextMenu'].popup(None, None, None, None, event.button, event.time)
 
     def on_audio_mousewheel(self, widget, event):
-        self.view['scale'].set_value(self.view['audio'].viewportLower * 100)
+        wg = self.view['audio']
+        if hasattr(self, 'vSyncWidget') and self.vSyncWidget.props.visible:
+            wg = self.vSyncWidget
+        self.view['scale'].set_value(wg.viewportLower * 100)
 
     def on_audio_ready(self, sender):
         self.view['audio'].audioModel = self.model.audio
         self.view['audio'].subtitleModel = self.model.subtitles
         self.view['audio'].voModel = self.model.voReference
         self.view['audio'].queue_draw()
+
+    def on_video_position_vsync(self):
+        self.vSyncWidget.pos = self.view['audio'].pos
+
+        # Follow video position in audioview
+        pos = self.vSyncWidget.pos / float(self.vSyncWidget.videoDuration)
+        vup = self.vSyncWidget.viewportUpper
+        vlow = self.vSyncWidget.viewportLower
+        vdiff = vup - vlow
+        if pos > vlow + vdiff * 0.98 and vup < 1:
+            if pos - vdiff * 0.90 < 1:
+                self.vSyncWidget.viewportLower = pos - vdiff * 0.10
+                self.vSyncWidget.viewportUpper = pos + vdiff * 0.90
+            else:
+                self.vSyncWidget.viewportUpper = 1
+                self.vSyncWidget.viewportLower = 1 - vdiff
+            self.vSyncWidget.queue_draw()
+        if pos < vlow:
+            if pos - vdiff * 0.10 > 0:
+                self.vSyncWidget.viewportLower = pos - vdiff * 0.10
+                self.vSyncWidget.viewportUpper = pos + vdiff * 0.90
+            else:
+                self.vSyncWidget.viewportLower = 0
+                self.vSyncWidget.viewportUpper = vdiff
+            self.vSyncWidget.queue_draw()
 
     def on_video_position(self, sender, position):
         self.view['audio'].pos = int(self.model.video.get_videoDuration()*position/1000000.0)
@@ -1370,6 +1440,9 @@ class Controller:
             if path != None:
                 with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
                     self.view['subtitles'].set_cursor(path)
+
+        if hasattr(self, 'vSyncWidget') and self.vSyncWidget.props.visible:
+            self.on_video_position_vsync()
 
     def check_video_file_compatibility(self, filename):
         if platform.system() != 'Windows':
