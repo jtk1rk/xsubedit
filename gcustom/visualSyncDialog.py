@@ -640,6 +640,8 @@ class cVisualSyncDialog(Gtk.Dialog):
         #self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         self.set_size_request(1000, 320)
         self.set_resizable(True)
+        self.textview = Gtk.TextView()
+        self.textview.set_size_request(-1, 50)
         self.audioWidget = cSyncAudioWidget()
         self.audioWidget.subtitlesModel = subsModel
         self.audioWidget.videoDuration = videoDuration / 1000000.0
@@ -654,6 +656,7 @@ class cVisualSyncDialog(Gtk.Dialog):
         vbox.pack_end(hbox, False, False, 1)
         hbox.pack_end(button_cancel, False, False, 1)
         hbox.pack_end(button_ok, False, False, 1)
+        hbox.pack_start(self.textview, False, False, 1)
         self.vbox.pack_start(vbox, True, True, 1)
         self.SCM = {}
         self.SCM['SCM-Menu'] = Gtk.Menu()
