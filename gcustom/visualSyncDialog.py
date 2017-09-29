@@ -8,6 +8,11 @@ from bisect import bisect
 from time import time
 import cairo
 
+class sSubRec:
+    def __init__(self, _obj, _startTime, _stopTime):
+        self.obj = _obj
+        self.startTime = _startTime
+        self.stopTime = _stopTime
 
 class cSyncAudioWidget(Gtk.EventBox):
     __gsignals__ = {       'sync-viewpos-update': (GObject.SIGNAL_RUN_LAST, None, (int,)),
@@ -33,7 +38,6 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.SINGLE_CLICK = 1
         self.DOUBLE_CLICK = 2
         self.dragging = False
-        self.dragging_sub = None
         self.mouse_button = None
         self.mouse_click_coords = None
         self.mouse_click_type = None
@@ -46,6 +50,9 @@ class cSyncAudioWidget(Gtk.EventBox):
         self._container = container
         self._replaceWidget = replaceWidget
         self.save = False
+        self.dragging_sub = None
+        self.dragging_sublist = []
+        self.dragging_dict = {}
 
         # Creating internal properties
         self.__viewportLower = None
@@ -223,37 +230,47 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.mouse_event = None
         self.dragging = False
         self.dragging_sub = None
-        if self.mode == 'SCM-Move-One' or self.mode == 'SCM-Move-All' or self.mode == 'SCM-Move-All-After':
-            self.mode = None
-        subs = self.subtitlesModel.get_sub_list()
-        for sub in subs:
-            sub.stopTime_orig = int(sub.stopTime)
-            sub.startTime_orig = int(sub.startTime)
+        #if self.mode == 'SCM-Move-One' or self.mode == 'SCM-Move-All' or self.mode == 'SCM-Move-All-After':
+        #    self.mode = None
+        self.mode = None
+
+        for item in self.dragging_sublist:
+            item.obj.startTime = item.startTime
+            item.obj.stopTime = item.stopTime
+        self.dragging_sublist = []
+        self.dragging_dict = {}
 
     def on_dragging(self, origmsec, msec):
         if self.overSub == None:
             return
 
-        if self.mode == 'SCM-Move-One':
-            self.overSub.startTime = int(self.overSub.startTime_orig) + (msec - origmsec)
-            self.overSub.stopTime = int(self.overSub.stopTime_orig) + (msec - origmsec)
-        elif self.mode == 'SCM-Move-All':
-            for sub in self.subtitlesModel.get_sub_list():
-                sub.startTime = int(sub.startTime_orig) + (msec - origmsec)
-                sub.stopTime = int(sub.stopTime_orig) + (msec - origmsec)
-        elif self.mode == 'SCM-Move-All-After':
-            subs = self.subtitlesModel.get_sub_list()
-            for sub in subs[subs.index(self.overSub):]:
-                sub.startTime = int(sub.startTime_orig) + (msec - origmsec)
-                sub.stopTime = int(sub.stopTime_orig) + (msec - origmsec)
-        elif self.mode == 'SCM-Strech-Selected':
-            subs = self.subtitlesModel.get_sub_list()
-            self.overSub.startTime = int(self.overSub.startTime_orig) + (msec - origmsec)
-            self.overSub.stopTime = int(self.overSub.stopTime_orig) + (msec - origmsec)
-            factor = (int(self.overSub.startTime) - int(subs[0].startTime)) / float( int(self.overSub.startTime_orig) - int(subs[0].startTime) )
-            for sub in subs[:subs.index(self.overSub)]: # calculate strech here
-                sub.startTime = int( (int(sub.startTime_orig) - int(subs[0].startTime)) * factor + int(subs[0].startTime) )
-                sub.stopTime = int( (int(sub.stopTime_orig) - int(subs[0].startTime)) * factor + int(subs[0].startTime) )
+        if self.dragging_sublist == []:
+            if self.mode == 'SCM-Move-One':
+                self.dragging_sublist = [ sSubRec(self.overSub, int(self.overSub.startTime_orig), int(self.overSub.stopTime_orig)) ]
+            elif self.mode == 'SCM-Move-All':
+                self.dragging_sublist = [ sSubRec(sub, int(sub.startTime), int(sub.stopTime)) for sub in self.subtitlesModel.get_sub_list() ]
+            elif self.mode == 'SCM-Move-All-After':
+                lst = self.subtitlesModel.get_sub_list()
+                self.dragging_sublist = [ sSubRec(sub, int(sub.startTime), int(sub.stopTime)) for sub in lst[lst.index(self.overSub):] ]
+            elif self.mode == 'SCM-Strech-Selected':
+                lst = self.subtitlesModel.get_sub_list()
+                self.dragging_sublist = [ sSubRec(sub, int(sub.startTime), int(sub.stopTime)) for sub in lst[:lst.index(self.overSub) + 1] ]
+            for item in self.dragging_sublist:
+                self.dragging_dict[item.obj] = item
+
+        if self.mode == 'SCM-Strech-Selected':
+            subs = self.dragging_sublist
+            subs[-1].startTime = int(subs[-1].obj.startTime) + (msec - origmsec)
+            subs[-1].stopTime = int(subs[-1].obj.stopTime) + (msec - origmsec)
+            factor = (subs[-1].startTime - subs[0].startTime) / float( int(subs[-1].obj.startTime) - subs[0].startTime)
+            for sub in subs[:-1]: # calculate strech here
+                sub.startTime = int( (int(sub.obj.startTime) - subs[0].startTime) * factor + subs[0].startTime )
+                sub.stopTime = int( (int(sub.obj.stopTime) - subs[0].startTime) * factor + subs[0].startTime )
+            subs[-1].stopTime = int( (int(subs[-1].obj.stopTime) - subs[0].startTime) * factor + subs[0].startTime )
+        else:
+            for sub in self.dragging_sublist:
+                sub.startTime = int(sub.obj.startTime) + (msec - origmsec)
+                sub.stopTime = int(sub.obj.stopTime) + (msec - origmsec)
 
         if not (self.mode is None):
             self.isCanvasBufferValid = False
@@ -609,8 +626,11 @@ class cSyncAudioWidget(Gtk.EventBox):
         height = widget.get_allocation().height
 
         for sub in self.subList:
-            paintlow = sub.startTime * self.ms_to_coord_factor - self.low_ms_coord if sub.startTime >= self.lowms else 0
-            painthigh = sub.stopTime * self.ms_to_coord_factor - self.low_ms_coord if sub.stopTime <= self.highms else self.width
+            dsub = sub
+            if sub in self.dragging_dict.keys():
+                dsub = self.dragging_dict[sub]
+            paintlow = dsub.startTime * self.ms_to_coord_factor - self.low_ms_coord if dsub.startTime >= self.lowms else 0
+            painthigh = dsub.stopTime * self.ms_to_coord_factor - self.low_ms_coord if dsub.stopTime <= self.highms else self.width
             if sub == self.activeSub:
                 cc.set_source_rgba(0.9, 0.9, 0.9, 0.5)
             else:
@@ -623,12 +643,12 @@ class cSyncAudioWidget(Gtk.EventBox):
                 cc.fill()
             cc.set_source_rgba(0.9, 0.4, 0.3, 0.7)
             cc.set_dash([6, 6, 6, 4])
-            if sub.startTime >= self.lowms and sub.startTime <= self.highms:
+            if dsub.startTime >= self.lowms and dsub.startTime <= self.highms:
                 cc.move_to(paintlow, 2)
                 cc.line_to(paintlow, height - 2)
                 cc.move_to(paintlow+1, 2)
                 cc.line_to(paintlow+1, height - 2)
-            if sub.stopTime >= self.lowms and sub.stopTime <= self.highms:
+            if dsub.stopTime >= self.lowms and dsub.stopTime <= self.highms:
                 cc.move_to(painthigh, 2)
                 cc.line_to(painthigh, height - 2)
                 cc.move_to(painthigh-1, 2)

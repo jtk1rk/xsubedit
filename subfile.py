@@ -33,7 +33,7 @@ class srtFile:
     def convert_to_utf8(self, data, encoding):
         tmp = []
         for line in data:
-            tmp.append(line.decode(encoding).encode('utf-8'))
+            tmp.append(line.decode(encoding, errors = 'replace').encode('utf-8'))
         return tmp
 
     def write_to_file(self, subs, encoding = 'Windows-1253'):
