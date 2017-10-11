@@ -230,8 +230,6 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.mouse_event = None
         self.dragging = False
         self.dragging_sub = None
-        #if self.mode == 'SCM-Move-One' or self.mode == 'SCM-Move-All' or self.mode == 'SCM-Move-All-After':
-        #    self.mode = None
         self.mode = None
 
         for item in self.dragging_sublist:
@@ -246,7 +244,7 @@ class cSyncAudioWidget(Gtk.EventBox):
 
         if self.dragging_sublist == []:
             if self.mode == 'SCM-Move-One':
-                self.dragging_sublist = [ sSubRec(self.overSub, int(self.overSub.startTime_orig), int(self.overSub.stopTime_orig)) ]
+                self.dragging_sublist = [ sSubRec(self.overSub, int(self.overSub.startTime), int(self.overSub.stopTime)) ]
             elif self.mode == 'SCM-Move-All':
                 self.dragging_sublist = [ sSubRec(sub, int(sub.startTime), int(sub.stopTime)) for sub in self.subtitlesModel.get_sub_list() ]
             elif self.mode == 'SCM-Move-All-After':
@@ -739,9 +737,6 @@ class cSyncAudioWidget(Gtk.EventBox):
         if value in ['SCM-Move-All', 'SCM-Move-One', 'SCM-Move-All-After', 'SCM-Strech-Selected']:
             self.mode = value
             subs = self.subtitlesModel.get_sub_list()
-            for sub in subs:
-                sub.startTime_orig = int(sub.startTime)
-                sub.stopTime_orig = int(sub.stopTime)
         elif value == 'SCM-Goto-First-Sub':
             sub = self.subtitlesModel.get_sub_list()[0]
             self.stickZoom = True

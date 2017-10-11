@@ -40,11 +40,6 @@ class Video(GObject.GObject):
         #self.textoverlay.set_property("font-desc", 'Arial 25')
         self.playbus.add_signal_watch()
         self.playbus.connect('message', self.on_message)
-        #self.playbus.enable_sync_message_emission()
-        #self.playbus.connect("sync-message::element", self.on_sync_message)
-
-    #def on_sync_message(self, bus, message):
-    #    print "sync_message"
 
     def on_message(self, bus, message):
         t = message.type
@@ -136,3 +131,34 @@ class Video(GObject.GObject):
 
     def get_videoPosition(self):
         return self.videoPosition
+
+class vobj(GObject.GObject):
+    def __init__(self, filename):
+        # INIT
+        super(vobj, self).__init__()
+        Gst.init(None)
+        self.videoDuration = 0
+        gstbin = Gst.Bin.new('my-gstbin1')
+        self.sink = Gst.ElementFactory.make('fakesink')
+        gstbin.add(self.sink)
+        self.playbin = Gst.ElementFactory.make('playbin')
+        self.playbin.set_property('video-sink', gstbin)
+        self.playbus = self.playbin.get_bus()
+        # Getting duration
+        self.playbin.set_property('uri', 'file:///'+filename)
+        self.playbin.set_state(Gst.State.PAUSED)
+        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
+            return
+        self.playbin.set_state(Gst.State.PLAYING)
+        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
+        self.calc_duration()
+        self.playbin.set_state(Gst.State.PAUSED)
+
+    def calc_duration(self):
+        try:
+            self.videoDuration = self.playbin.query_duration(Gst.Format.TIME)[1]
+        except:
+            pass
+
+    def get_videoDuration(self):
+        return self.videoDuration

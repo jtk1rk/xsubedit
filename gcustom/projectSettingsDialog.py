@@ -131,6 +131,8 @@ class cProjectSettingsDialog(Gtk.Dialog):
         filter.add_pattern('*.h264')
         filter.add_pattern('*.mkv')
         filter.add_pattern('*.mp4')
+        filter.add_pattern('*.mov')
+        filter.add_pattern('*.m4v')
         filter.add_pattern('*.mpg')
         filter.add_pattern('*.mpeg')
         filter.add_pattern('*.mpe')

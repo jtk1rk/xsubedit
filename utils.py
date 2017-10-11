@@ -144,6 +144,16 @@ def isfloat(item):
     except ValueError:
         return False
 
+def isint(item):
+    try:
+        int(item)
+        if int(item) == float(item):
+            return True
+        else:
+            return False
+    except ValueError:
+        return False
+
 def find_all_str(s, substring):
     """Finds all occurences of a substring in a string
        and returns the result as a list of tuples (begin, end)"""

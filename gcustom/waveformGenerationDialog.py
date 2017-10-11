@@ -9,7 +9,7 @@ from gcustom.messageDialog import cMessageDialog
 import os
 
 class cWaveformGenerationDialog(Gtk.Window):
-    def __init__(self, parent, video_file, audio_file, video_duration, audio_rate):
+    def __init__(self, parent, video_file, audio_file, video_duration, audio_rate, full_peak = False):
         super(cWaveformGenerationDialog, self).__init__()
         self.parent = parent
         self.set_title("Waveform Generation Progress")
@@ -28,6 +28,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         window = self.get_window()
         if window:
             window.set_functions(0)
+        self.full_peak = full_peak
         self.ffmpeg = cffmpeg('ffmpeg -y -i "' + self.videoFile + '" -vn -ar ' + str(self.audioRate) + ' -ac 1 -c:a pcm_u8 "' + self.audioFile + '.wav"')
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
 
@@ -39,11 +40,14 @@ class cWaveformGenerationDialog(Gtk.Window):
         audioSize = os.stat(self.audioFile).st_size - 44
         if audioSize <= 0:
             return
-        dataPoints = self.videoDuration / 1000000.0 / 10.0
+        dataPoints = self.videoDuration / 1000000.0
+
+        if not self.full_peak:
+            dataPoints /= 10.0
+
         samplesPerDataPoint = audioSize / dataPoints
 
         with open(self.audioFile, 'rb') as f:
-            #f.read( 44 + int(self.audioRate * (15 / 1000.0)) )
             f.read( 44 + int(self.audioRate * (7.5 / 1000.0)) )
             tmpData = f.read(int(round(samplesPerDataPoint / 2.0)))
             tmpData = map(lambda i: ord(i) - 128, tmpData)

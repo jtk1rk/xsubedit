@@ -13,6 +13,7 @@ from gcustom.projectSettingsDialog import cProjectSettingsDialog
 from gcustom.waveformGenerationDialog import cWaveformGenerationDialog
 from gcustom.subCheckerDialog import cSubCheckerDialog
 from gcustom.recodeDialog import cRecodeDialog
+from gcustom.splitSrtDialog import cSplitSrtDialog
 from gcustom.openMenu import cOpenMenu
 from gcustom.textEditDialog import cTextEditDialog
 from gcustom.searchReplaceDialog import cSearchReplaceDialog
@@ -22,6 +23,7 @@ from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
 from gcustom.visualSyncDialog import cSyncAudioWidget
 from gcustom.messageDialog import cMessageDialog
+from gcustom.autoSyncOtherVersionDialog import cAutoSyncOtherVersionDialog
 from thesaurus import cThesaurus
 
 from subfile import srtFile, gen_timestamp_srt_from_source
@@ -140,6 +142,8 @@ class Controller:
         view['VCM-TwoPassSD'].connect('activate', self.on_VCM, 'VCM-TwoPassSD')
         view['VCM-SceneDetect'].connect('activate', self.on_VCM, 'VCM-SceneDetect')
         view['VCM-StopDetection'].connect('activate', self.on_VCM, 'VCM-StopDetection')
+        view['splitSubsTB'].connect('clicked', self.on_TB_split)
+        view['autoSyncOtherVersionTB'].connect('clicked', self.on_autoSyncOtherVersion_clicked)
 
         model.connect('audio-ready', self.on_audio_ready)
         model.video.connect('position-update', self.on_video_position)
@@ -232,6 +236,8 @@ class Controller:
         view.show_all()
         view['subtitles'].grab_focus()
         view['projectSettingsTB'].set_property('sensitive', False)
+        view['splitSubsTB'].set_property('sensitive', False)
+        view['autoSyncOtherVersionTB'].set_property('sensitive', False)
 
         # Final initializations
         self.preferences.load()
@@ -257,6 +263,9 @@ class Controller:
 
         self.init_done = True
 
+    def on_TB_split(self, sender):
+        cSplitSrtDialog(self.view, self.model.subFilename, self.model.subtitles.get_sub_list())
+
     def on_TB_visual_sync(self, sender):
         if self.view['audio'].videoDuration == 0:
             return
@@ -277,6 +286,9 @@ class Controller:
         self.vSyncWidget.sceneModel = self.model.scenes
         self.vSyncWidget.destroy_signal_id = self.vSyncWidget.connect('destroy', self.on_vsync_destroy, slist_before)
         self.view['visualSyncTB'].set_sensitive(False)
+
+    def on_autoSyncOtherVersion_clicked(self, sender):
+        cAutoSyncOtherVersionDialog(self.view, self.model.video.videoFilename, self.model.video.get_videoDuration(), self.model.subtitles.get_sub_list())
 
     def on_vsync_destroy(self, widget, slist_before):
         widget.disconnect(widget.destroy_signal_id)
@@ -1032,6 +1044,9 @@ class Controller:
             referenceCol = self.view['subtitles'].get_columns()[4]
             referenceCol.props.visible = False
             self.view['HCM-Reference'].set_active(False)
+
+        self.view['splitSubsTB'].set_sensitive(True)
+        self.view['autoSyncOtherVersionTB'].set_sensitive(True)
 
     def on_OCM_select(self, sender, result):
         sender.disconnect(sender.handler_select)
