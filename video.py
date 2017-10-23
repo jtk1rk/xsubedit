@@ -71,6 +71,31 @@ class Video(GObject.GObject):
         self.calc_duration()
         self.playbin.set_state(Gst.State.PAUSED)
 
+    def set_video_filename_old(self, filename):
+        self.videoFilename = filename;
+        self.playbin.set_property('uri', 'file:///'+filename)
+        self.playbin.set_state(Gst.State.PAUSED)
+        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
+            return
+        self.ready = True
+        self.playing = False
+        self.playbin.set_state(Gst.State.PLAYING)
+        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
+        self.calc_duration()
+        self.playbin.set_state(Gst.State.PAUSED)
+
+    def set_video_filename(self, filename):
+        self.videoFilename = filename;
+        self.playbin.set_property('uri', 'file:///'+filename)
+        self.playbin.set_state(Gst.State.PAUSED)
+        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
+            return
+        self.ready = True
+        self.playing = False
+        self.playbin.set_state(Gst.State.PLAYING)
+        self.calc_duration()
+        self.playbin.set_state(Gst.State.PAUSED)
+
     def set_audio_resolution(self, resolution):
         self.audio_resolution = resolution
 
@@ -150,7 +175,6 @@ class vobj(GObject.GObject):
         if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
             return
         self.playbin.set_state(Gst.State.PLAYING)
-        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
         self.calc_duration()
         self.playbin.set_state(Gst.State.PAUSED)
 

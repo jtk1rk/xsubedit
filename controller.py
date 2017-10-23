@@ -22,7 +22,6 @@ from gcustom.timeChangeDialog import cTimeChangeDialog
 from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
 from gcustom.visualSyncDialog import cSyncAudioWidget
-from gcustom.messageDialog import cMessageDialog
 from gcustom.autoSyncOtherVersionDialog import cAutoSyncOtherVersionDialog
 from thesaurus import cThesaurus
 
@@ -271,9 +270,9 @@ class Controller:
             return
         subs = self.model.subtitles.get_sub_list()
         if len(subs) == 0:
-            message = cMessageDialog(self.view, Gtk.MessageType.ERROR, 'No subtitles found to synchronize.')
-            message.run()
-            message.destroy()
+            dlg = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 'No subtitles found to synchronize.')
+            dlg.run()
+            dlg.destroy()
             return
         for sub in subs:
             sub.startTime_before_sync = int(sub.startTime)
@@ -288,7 +287,7 @@ class Controller:
         self.view['visualSyncTB'].set_sensitive(False)
 
     def on_autoSyncOtherVersion_clicked(self, sender):
-        cAutoSyncOtherVersionDialog(self.view, self.model.video.videoFilename, self.model.video.get_videoDuration(), self.model.subtitles.get_sub_list())
+        cAutoSyncOtherVersionDialog(self.view, self.model.video.videoFilename, self.model.subtitles.get_sub_list())
 
     def on_vsync_destroy(self, widget, slist_before):
         widget.disconnect(widget.destroy_signal_id)
@@ -327,7 +326,6 @@ class Controller:
         elif option == 'VCM-StopDetection' and hasattr(self, 'scenedetect'):
             self.scenedetect.stop()
             self.view['progress-bar'].set_visible(False)
-
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()

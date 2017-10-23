@@ -9,7 +9,6 @@ from collections import deque
 from random import random
 
 get_random_in_range = lambda a,b: int(a + random() * b)
-iround = lambda v: int(round(v))
 
 def open_data(filename):
     with open(filename, 'rb') as f:
@@ -19,11 +18,30 @@ def open_data(filename):
 def moving_average(ar, n):
     return np.convolve(ar, np.ones((n,))/n, mode='same')
 
-# Spectral Functions
+def keep_peaks(ar):
+    data = ar - ar.mean()
+    data[data < 0] = 0
+    return data
+
+def normalize(ar):
+    if len(ar) == 0:
+        return []
+    a = ar - ar.min()
+    d = (np.abs(a)).max()
+    return a if d == 0 else a / float(d)
 
 def distance(v1, v2):
     tmp = v1 - v2
-    return np.sqrt( (tmp**2).mean() )
+    return np.sqrt( (tmp**2).sum() )
+
+def normalize_nxn(ar):
+    res = ar[:,:]
+    for i in xrange(ar.shape[1]):
+        res[:, i] = normalize(ar[:, i])
+    return res
+
+def normalize_spec(spec):
+    return (spec[0], spec[1], normalize_nxn(spec[2]))
 
 def compute_match(fs1, fs2):
     match = []
@@ -40,16 +58,29 @@ def stat_test(lst):
     gmin_idx = argmin(grad)
     gmax_idx = argmax(grad)
     poi = (gmin_idx + gmax_idx) / 2
-    # fast tests
-    tests = [ False ] * 6
-    tests[0] = grad[gmin_idx] < 0
-    tests[1] = grad[gmax_idx] > 0
-    tests[2] = abs(grad[gmin_idx] - grad[gmax_idx]) > grad.mean() + 10 * grad.std()
-    tests[3] = abs(grad[gmin_idx] - grad[gmax_idx]) > 10
-    tests[4] = ar[poi] < ar.mean() - 2 * ar.std()
-    tests[5] = abs(gmin_idx - gmax_idx) < 4
-
+    # tests
+    tests = [ False ] * 5
+    tests[0] = grad[gmin_idx] < 0 and grad[gmax_idx] > 0
+    tests[1] = abs(grad[gmin_idx]) > grad.mean() + 5 * grad.std()
+    tests[2] = abs(grad[gmax_idx]) > grad.mean() + 5 * grad.std()
+    tests[3] = ar[poi] < ar.mean() - 1.5 * ar.std()
+    tests[4] = abs(gmin_idx - gmax_idx) < 4
     return all(tests)
+
+def stat_test_dbg(lst):
+    ar = array(lst)
+    grad = np.gradient(ar)
+    gmin_idx = argmin(grad)
+    gmax_idx = argmax(grad)
+    poi = (gmin_idx + gmax_idx) / 2
+    # tests
+    tests = [ False ] * 5
+    tests[0] = grad[gmin_idx] < 0 and grad[gmax_idx] > 0
+    tests[1] = abs(grad[gmin_idx]) > grad.mean() + 5 * grad.std()
+    tests[2] = abs(grad[gmax_idx]) > grad.mean() + 5 * grad.std()
+    tests[3] = ar[poi] < ar.mean() - 1.5 * ar.std()
+    tests[4] = abs(gmin_idx - gmax_idx) < 4
+    return tests
 
 def gen_match_array(slc, spec, doffset, break_limit):
     res = deque(maxlen = 250)
@@ -57,14 +88,16 @@ def gen_match_array(slc, spec, doffset, break_limit):
     dropped = 0
     for i in xrange(spec[2].shape[1] - slc.shape[1] - offset):
         res.append( compute_match( slc, spec[2][:, i + offset : i + offset + slc.shape[1] ] ) )
-        if i % 250 == 0 and i > 0 and __name__ == '__main__' and False:
+        if i % 250 == 0 and i < 0:
             tst = array(res)
             plt.plot(tst)
             plt.plot([tst.mean()] * len(tst))
             plt.plot([tst.mean() - tst.std()] * len(tst))
             plt.plot([tst.mean() + tst.std()] * len(tst))
-            plt.plot(np.gradient(tst))
+            #plt.plot(np.gradient(tst * 40))
             print ms2ts(idx2ms(offset + dropped, spec))
+            print tst.mean(), tst.std()
+            print stat_test_dbg(tst)
             plt.show()
         dropped += 0 if i < 250 else 1
         if (i % 25 == 0 and i > 100 and stat_test(res)) or (0 < break_limit < i):
@@ -75,10 +108,6 @@ def gen_match_array(slc, spec, doffset, break_limit):
         plt.plot(res)
         plt.plot([res.mean()] * len(res))
         plt.plot(np.gradient(res))
-        grad = np.gradient(res)
-        gmin_idx = argmin(grad)
-        gmax_idx = argmax(grad)
-        print abs(grad[gmin_idx] - grad[gmax_idx]), grad.mean(), grad.std()
         plt.show()
 
     res = array(res)
@@ -101,7 +130,7 @@ def get_mean_sum_value(slc, dst):
 def get_min_match_size(src, dst, start_ms, stop_ms):
     duration = stop_ms - start_ms
     for k in xrange(5):
-        slc = get_spec_slice(start_ms, start_ms + duration + k * 1500, src)[2]
+        slc = normalize_spec(get_spec_slice(start_ms, start_ms + duration + k * 1500, src))[2]
         res = get_mean_sum_value(slc, dst)
         if res >= 180:
             return start_ms + duration + k * 1500
@@ -127,37 +156,27 @@ def ms2idx(ms, spec):
     return int(floor(ms / (td * 1000.0)))
 
 def match(src_spec, dst_spec, _start_ms, _stop_ms, offset = 0, break_limit = -1):
-    print "match(src, dst, start_ms=%s, stop_ms=%s, offset=%s)" % ( ms2ts(_start_ms), ms2ts(_stop_ms), ms2ts(offset) )
     start_ms = _start_ms
-    stop_ms = max(_stop_ms, start_ms + 8000)
-    src_spec_slice = get_spec_slice(start_ms, stop_ms, src_spec)
-    _break_limit = -1 if break_limit == -1 else round(int(break_limit / 28.0))
-    _break_limit = 250 if 1 < break_limit < 250 else _break_limit
-    res = gen_match_array(src_spec_slice[2], dst_spec, ms2idx(offset, dst_spec), _break_limit)
+    stop_ms = max(_stop_ms, start_ms + 5000)
+    #stop_ms = get_min_match_size(src_spec, dst_spec, _start_ms, stop_ms)
+    src_spec_slice = normalize_spec(get_spec_slice(start_ms, stop_ms, src_spec))
+    res = gen_match_array(src_spec_slice[2], dst_spec, ms2idx(offset, dst_spec), break_limit)
     return None if res is None else ( idx2ms(res, dst_spec), idx2ms(res, dst_spec) + (_stop_ms - _start_ms) )
 
-def get_spect(data, audio_rate = 8000):
-    return signal.spectrogram( data, audio_rate, scaling = 'spectrum' )
-
-def get_spect_from_file(filename, audio_rate = 8000):
+def get_spect(filename, audio_rate = 8000):
     return signal.spectrogram( open_data(filename), audio_rate, scaling = 'spectrum' )
-
-def normalize_spec(spec):
-    spec_data = spec[2] - spec[2].mean()
-    spec_data /= spec_data.std()
-    return (spec[0], spec[1], spec_data)
-
 
 if __name__ == "__main__":
     from subutils import ts2ms
-
-    src_data = t_normalize(open_data('/home/phantome/tmp/test/src-xsubedit.raw'))
-    dst_data = t_normalize(open_data('/home/phantome/tmp/test/dst-xsubedit.raw'))
-    spec1 = normalize_spec(get_spect(src_data))
-    spec2 = normalize_spec(get_spect(dst_data))
+    # Open data and generate spectrums
+    spec1 = get_spect('/home/phantome/tmp/test/src-xsubedit.raw')
+    spec2 = get_spect('/home/phantome/tmp/test/dst-xsubedit.raw')
+    spec2 = normalize_spec(spec2)
 
     print 'calc matching'
-    res = match(spec1, spec2, ts2ms('00:10:20,005'), ts2ms('00:10:22,743'), ts2ms('00:09:00,000'))
+    #res = match(spec1, spec2, ts2ms('00:11:12,785'), ts2ms('00:12:12,785'))
+    res = match(spec1, spec2, 215350, 218307)
+
 
     if not (res is None):
         print res, ms2ts(int(res[0])), ms2ts(int(res[1]))

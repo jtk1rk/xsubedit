@@ -5,7 +5,6 @@ from progressBar import cProgressBar
 from os.path import exists
 from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
-from gcustom.messageDialog import cMessageDialog
 import os
 
 class cWaveformGenerationDialog(Gtk.Window):
@@ -29,7 +28,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         if window:
             window.set_functions(0)
         self.full_peak = full_peak
-        self.ffmpeg = cffmpeg('ffmpeg -y -i "' + self.videoFile + '" -vn -ar ' + str(self.audioRate) + ' -ac 1 -c:a pcm_u8 "' + self.audioFile + '.wav"')
+        self.ffmpeg = cffmpeg( 'ffmpeg -y -i "%s" -vn -ar "%s" -ac 1 -c:a pcm_u8 "%s.wav"' % (self.videoFile, str(self.audioRate), self.audioFile) )
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
 
     def ffmpeg_progress(self, sender, value):
@@ -86,9 +85,9 @@ class cWaveformGenerationDialog(Gtk.Window):
         if exists(self.audioFile + '.wav'):
             self.process_wav()
         else:
-            messageDialog = cMessageDialog(self, Gtk.MessageType.ERROR, 'Could not generate audio file from video.')
-            messageDialog.run()
-            messageDialog.destroy()
+            dlg = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 'Could not generate audio file from video.')
+            dlg.run()
+            dlg.destroy()
         self.destroy()
 
     def set_progress(self, value):

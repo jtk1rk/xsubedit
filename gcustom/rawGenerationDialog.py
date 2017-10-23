@@ -1,19 +1,24 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from os.path import exists
 from gi.repository import Gtk
 from progressBar import cProgressBar
+from os.path import exists
+from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
+import os
 
-class cRecodeDialog(Gtk.Window):
-    def __init__(self, parent, filename, new_filename, ffmpeg_cmd, title):
-        super(cRecodeDialog, self).__init__()
+class cRawGenerationDialog(Gtk.Window):
+    def __init__(self, parent, video_file, audio_file, audio_rate = 8000):
+        super(cRawGenerationDialog, self).__init__()
         self.parent = parent
-        self.set_title(title)
+        self.set_title("Raw Audio Generation Progress")
         self.set_modal(True)
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.set_size_request(400, -1)
+        self.videoFile = video_file.decode('utf-8')
+        self.audioFile = audio_file.decode('utf-8')
+        self.audioRate = audio_rate
         self.progressBar = cProgressBar()
         self.add(self.progressBar)
         self.set_resizable(False)
@@ -21,26 +26,20 @@ class cRecodeDialog(Gtk.Window):
         window = self.get_window()
         if window:
             window.set_functions(0)
-        self.new_filename = new_filename.decode('utf-8')
-        self.filename = filename.decode('utf-8')
-        self.ffmpeg = cffmpeg(ffmpeg_cmd.replace('SOURCEFILE', self.filename).replace('DESTFILE', self.new_filename))
+        self.ffmpeg = cffmpeg( 'ffmpeg -y -i "%s" -vn -ar %s -ac 1 -c:a pcm_u8 -f u8 "%s"' % (self.videoFile, str(self.audioRate), self.audioFile) )
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
-        self.result = False
 
     def ffmpeg_progress(self, sender, value):
-        self.set_progress(float(value))
+        self.set_progress(float(value) / 2)
 
     def run(self):
         self.show()
         self.process_messages()
         self.ffmpeg.run()
-        if exists(self.new_filename):
-            self.result = True
-        else:
-            dlg = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 'Could not generate a compatible video file.')
+        if not exists(self.audioFile):
+            dlg = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 'Could not generate raw audio file from video.')
             dlg.run()
             dlg.destroy()
-            self.result = False
         self.destroy()
 
     def set_progress(self, value):

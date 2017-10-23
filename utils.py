@@ -13,6 +13,22 @@ RUN_TIMESTAMP = time.time()
 UTF8_BOM = '\xef\xbb\xbf'
 DIR_DELIMITER = '/' if platform.system() == 'Linux' else '\\'
 
+class StretchableList(list):
+    def stretch(self, newlen):
+        old = [ (i * (newlen-1), self[i]) for i in range(len(self)) ]
+        new = [ i * (len(self)-1) for i in range(newlen) ]
+        self[:] = []
+        for n in new:
+            while len(old) > 1 and n >= old[1][0]:
+                old.pop(0)
+            if old[0][0] == n:
+                self.append(old[0][1])
+            else:
+                self.append( old[0][1] + \
+                             float((n-old[0][0]))/(old[1][0]-old[0][0]) * \
+                             (old[1][1]-old[0][1]) )
+        return self
+
 class brList(list):
     def append(self, index, item):
         if index < len(self):

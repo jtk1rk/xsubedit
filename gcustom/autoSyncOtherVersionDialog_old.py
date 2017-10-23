@@ -149,12 +149,11 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
 
         # match subs
         pb = cProgressBarDialog(self, 'Matching subtitles...', 'Matching subtitle 0 / %d' % len(self.subs))
-        pb.set_progress(idx / float(len(self.subs)))
-        pb.update_info('Matching subtitle %d / %d' % (idx, len(self.subs)))
-
         last_failed = False
         for sub_enum in enumerate(self.subs[1:]):
             (idx, sub) = sub_enum
+            pb.set_progress(idx / float(len(self.subs)))
+            pb.update_info('Matching subtitle %d / %d' % (idx, len(self.subs)))
             self.process_messages()
             # Calc offset
             if len(dst_sublist) >= 2 and abs(int(dst_sublist[-1].startTime - dst_sublist[-2].startTime)) > 5000:
