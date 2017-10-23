@@ -5,10 +5,11 @@ from progressBar import cProgressBar
 from os.path import exists
 from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
+from utils import iround
 import os
 
 class cWaveformGenerationDialog(Gtk.Window):
-    def __init__(self, parent, video_file, audio_file, video_duration, audio_rate, full_peak = False):
+    def __init__(self, parent, video_file, audio_file, audio_rate):
         super(cWaveformGenerationDialog, self).__init__()
         self.parent = parent
         self.set_title("Waveform Generation Progress")
@@ -18,7 +19,6 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.set_size_request(400, -1)
         self.videoFile = video_file.decode('utf-8')
         self.audioFile = audio_file.decode('utf-8')
-        self.videoDuration = video_duration
         self.audioRate = audio_rate
         self.progressBar = cProgressBar()
         self.add(self.progressBar)
@@ -27,35 +27,30 @@ class cWaveformGenerationDialog(Gtk.Window):
         window = self.get_window()
         if window:
             window.set_functions(0)
-        self.full_peak = full_peak
-        self.ffmpeg = cffmpeg( 'ffmpeg -y -i "%s" -vn -ar "%s" -ac 1 -c:a pcm_u8 "%s.wav"' % (self.videoFile, str(self.audioRate), self.audioFile) )
+        self.ffmpeg = cffmpeg('ffmpeg -y -i "%s" -vn -ar "%s" -ac 1 -c:a pcm_u8 -f u8 "%s.raw"' % (self.videoFile, str(self.audioRate), self.audioFile))
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
 
     def ffmpeg_progress(self, sender, value):
         self.set_progress(float(value) / 2)
 
     def process_wav(self):
-        os.rename(self.audioFile + '.wav', self.audioFile)
-        audioSize = os.stat(self.audioFile).st_size - 44
+        os.rename(self.audioFile + '.raw', self.audioFile)
+        audioSize = os.stat(self.audioFile).st_size
+        audioDuration = audioSize / 8000.0
         if audioSize <= 0:
             return
-        dataPoints = self.videoDuration / 1000000.0
-
-        if not self.full_peak:
-            dataPoints /= 10.0
-
+        dataPoints = self.audioDuration / 10
         samplesPerDataPoint = audioSize / dataPoints
 
         with open(self.audioFile, 'rb') as f:
-            f.read( 44 + int(self.audioRate * (7.5 / 1000.0)) )
-            tmpData = f.read(int(round(samplesPerDataPoint / 2.0)))
+            tmpData = f.read(iround(samplesPerDataPoint / 2.0))
             tmpData = map(lambda i: ord(i) - 128, tmpData)
             hiAudio = []
             lowAudio = []
-            dp_div = int(round(dataPoints / 10))
-            samplesPerDataPoint = int(round(samplesPerDataPoint))
+            dp_div = iround(dataPoints / 10.0)
+            samplesPerDataPoint = iround(samplesPerDataPoint)
 
-            for point in xrange(int(round(dataPoints))):
+            for point in xrange(iround(dataPoints)):
                 if len(tmpData) == 0:
                     hiAudio.append(0)
                     lowAudio.append(0)
@@ -82,7 +77,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.show()
         self.process_messages()
         self.ffmpeg.run()
-        if exists(self.audioFile + '.wav'):
+        if exists(self.audioFile + '.raw'):
             self.process_wav()
         else:
             dlg = Gtk.MessageDialog(self, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 'Could not generate audio file from video.')

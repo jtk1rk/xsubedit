@@ -878,7 +878,7 @@ class Controller:
             self.preferences.save()
 
             if not (exists(projectFiles['peakFile'].decode('utf-8'))):
-                wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, self.model.video.videoDuration, 8000)
+                wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, 8000)
                 wgDialog.run()
             self.model.get_waveform()
 
@@ -978,7 +978,7 @@ class Controller:
 
     def open_pkf(self, filename):
         if not exists(filename.decode('utf-8')):
-            wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, self.model.video.videoDuration, 8000)
+            wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, 8000)
             wgDialog.run()
         self.model.get_waveform()
 

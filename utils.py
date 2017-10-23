@@ -13,6 +13,8 @@ RUN_TIMESTAMP = time.time()
 UTF8_BOM = '\xef\xbb\xbf'
 DIR_DELIMITER = '/' if platform.system() == 'Linux' else '\\'
 
+iround = lambda x: int(round(x))
+
 class StretchableList(list):
     def stretch(self, newlen):
         old = [ (i * (newlen-1), self[i]) for i in range(len(self)) ]
