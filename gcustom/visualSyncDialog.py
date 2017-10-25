@@ -61,7 +61,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.__width = None
         self.__pos = None
         self.__cursor = None
-        self.__videoDuration = None
+        self.__audioDuration = None
         self.__highms = None
         self.__lowms = None
         self.__subs = None
@@ -86,7 +86,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.isWaveformBufferValid = False
         self.isCanvasBufferValid = False
         self.isParametersValid = False
-        self.videoDuration = 0
+        self.audioDuration = 0
         self.grayms = 120.0
         self.pos = 0
         self.cursor = 0
@@ -167,7 +167,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.scenes = ref
 
     def on_button_press(self, widget, event):
-        if self.videoDuration == 0:
+        if self.audioDuration == 0:
             return
         self.mouse_click_coords = (event.x, event.y)
         self.mouse_last_click_coords = self.mouse_click_coords
@@ -276,7 +276,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             self.emit('sync-sub-updated', self.overSub)
 
     def on_motion_notify(self, widget, event):
-        if self.videoDuration == 0:
+        if self.audioDuration == 0:
             return
 
         mos = self.mouse_over_sub
@@ -305,7 +305,7 @@ class cSyncAudioWidget(Gtk.EventBox):
     def zoom(self, direction, xcoord):
         if self.stickZoom:
             return
-        if self.videoDuration == 0:
+        if self.audioDuration == 0:
             return
 
         na = self.viewportLower * 100
@@ -336,7 +336,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.queue_draw()
 
     def on_scroll(self, widget, event):
-        if self.videoDuration == 0:
+        if self.audioDuration == 0:
             return
 
         if event.state & Gdk.ModifierType.CONTROL_MASK:
@@ -351,12 +351,12 @@ class cSyncAudioWidget(Gtk.EventBox):
             return
 
         moveval = 25 * self.mspp
-        if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.videoDuration:
-            self.viewportLower = (self.lowms + moveval) / float(self.videoDuration)
-            self.viewportUpper = (self.highms + moveval) / float(self.videoDuration)
+        if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.audioDuration:
+            self.viewportLower = (self.lowms + moveval) / float(self.audioDuration)
+            self.viewportUpper = (self.highms + moveval) / float(self.audioDuration)
         elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:
-            self.viewportLower = (self.lowms - moveval) / float(self.videoDuration)
-            self.viewportUpper = (self.highms - moveval) / float(self.videoDuration)
+            self.viewportLower = (self.lowms - moveval) / float(self.audioDuration)
+            self.viewportUpper = (self.highms - moveval) / float(self.audioDuration)
 
         self.queue_draw()
 
@@ -444,7 +444,7 @@ class cSyncAudioWidget(Gtk.EventBox):
     @audioData.setter
     def audioData(self, val):
         if val != None:
-            self.isReady = self.videoDuration != 0
+            self.isReady = self.audioDuration != 0
             self.isParametersValid = False
             self.isWaveformBufferValid = False
             self.isCanvasBufferValid = False
@@ -467,25 +467,25 @@ class cSyncAudioWidget(Gtk.EventBox):
     @cursor.setter
     def cursor(self, val):
         if self.__cursor != val:
-            self.videoSegment = (val, self.videoDuration)
+            self.videoSegment = (val, self.audioDuration)
             self.queue_draw()
         self.__cursor = val
 
     @property
-    def videoDuration(self):
-        return self.__videoDuration
+    def audioDuration(self):
+        return self.__audioDuration
 
-    @videoDuration.setter
-    def videoDuration(self, val):
+    @audioDuration.setter
+    def audioDuration(self, val):
         if val != 0:
-            self.__videoDuration = val
+            self.__audioDuration = val
             self.isParamtersValid = False
             self.isCanvasBufferValid = False
             self.isWaveformBufferValid = False
             self.isReady = self.audioData != None
             self.videoSegment = (0, val)
         else:
-            self.__videoDuration = val
+            self.__audioDuration = val
 
     @property
     def activeSub(self):
@@ -496,7 +496,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         if val != None:
             self.videoSegment = (int(val.startTime), int(val.stopTime))
         else:
-            self.videoSegment = (self.cursor, self.videoDuration)
+            self.videoSegment = (self.cursor, self.audioDuration)
         if self.__activeSub != val:
             self.emit('sync-active-sub-changed', val)
         self.__activeSub = val
@@ -529,16 +529,16 @@ class cSyncAudioWidget(Gtk.EventBox):
         return int(self.lowms + (pos / float(self.width)) * (self.highms - self.lowms))
 
     def get_viewport_pos_from_ms(ms):
-        return (ms / self.videoDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) * widget.get_allocation().width
+        return (ms / self.audioDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) * widget.get_allocation().width
 
     def calc_parameters(self):
-        self.lowms = self.viewportLower * self.videoDuration
-        self.highms = self.viewportUpper * self.videoDuration
+        self.lowms = self.viewportLower * self.audioDuration
+        self.highms = self.viewportUpper * self.audioDuration
         self.mspp = (self.highms - self.lowms) / float(self.width)
         self.grayarea = self.grayms / self.mspp
         if self.subtitlesModel != None:
             self.subList = set(self.subtitlesModel.list_subs_overlapping_window(self.lowms - 120, self.highms))
-        self.ms_to_coord_factor = self.width / (float(self.viewportUpper - self.viewportLower) * self.videoDuration)
+        self.ms_to_coord_factor = self.width / (float(self.viewportUpper - self.viewportLower) * self.audioDuration)
         self.low_ms_coord  = (self.viewportLower * self.width) / float(self.viewportUpper - self.viewportLower)
 
     def center_active_sub(self):
@@ -546,18 +546,18 @@ class cSyncAudioWidget(Gtk.EventBox):
         high = int(self.activeSub.stopTime)
         msdur = (high - low) / 2
         if self.stickZoom:
-            vpwidthms = (self.viewportUpper - self.viewportLower) * float(self.videoDuration)
+            vpwidthms = (self.viewportUpper - self.viewportLower) * float(self.audioDuration)
             centerms = (low + msdur)
             lms = (centerms - (vpwidthms / 2))
             ums = (centerms + (vpwidthms / 2))
             if lms < 0:
                 ums += abs(lms)
                 lms = 0
-            elif ums > self.videoDuration:
-                lms -= ums - self.videoDuration
-                ums = self.videoDuration
-            self.viewportLower = lms / float(self.videoDuration)
-            self.viewportUpper = ums / float(self.videoDuration)
+            elif ums > self.audioDuration:
+                lms -= ums - self.audioDuration
+                ums = self.audioDuration
+            self.viewportLower = lms / float(self.audioDuration)
+            self.viewportUpper = ums / float(self.audioDuration)
         else:
             if msdur < 1000:
                 msdur = 1000
@@ -565,22 +565,22 @@ class cSyncAudioWidget(Gtk.EventBox):
             high += msdur
             if low < 0:
                 low = 0
-            if high > self.videoDuration:
-                high = self.videoDuration
-            self.viewportLower = (low / float(self.videoDuration))
-            self.viewportUpper = (high / float(self.videoDuration))
+            if high > self.audioDuration:
+                high = self.audioDuration
+            self.viewportLower = (low / float(self.audioDuration))
+            self.viewportUpper = (high / float(self.audioDuration))
 
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()
         self.videoSegment = (int(self.activeSub.startTime), int(self.activeSub.stopTime))
-        self.emit('sync-viewpos-update', int(100 * low / float(self.videoDuration)))
+        self.emit('sync-viewpos-update', int(low * 100.0 / self.audioDuration))
 
     def center_multiple_active_subs(self, startTime, stopTime):
         self.videoSegment = (int(startTime), int(stopTime))
-        subWidthPerc = (stopTime - startTime) / float(self.videoDuration)
-        lowPerc = startTime / float(self.videoDuration) - subWidthPerc * 0.8
-        highPerc = stopTime / float(self.videoDuration) + subWidthPerc * 0.8
+        subWidthPerc = (stopTime - startTime) / float(self.audioDuration)
+        lowPerc = startTime / float(self.audioDuration) - subWidthPerc * 0.8
+        highPerc = stopTime / float(self.audioDuration) + subWidthPerc * 0.8
         self.viewportLower = lowPerc if lowPerc >= 0 else 0
         self.viewportUpper = highPerc if highPerc <= 1 else 1
         self.queue_draw()

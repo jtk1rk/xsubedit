@@ -12,16 +12,6 @@ import sys
 class Model(GObject.GObject):
     __gsignals__ = { 'audio-ready': (GObject.SIGNAL_RUN_LAST, None, ()) }
 
-    video = None
-    audio = None
-    subtitles = Subtitles()
-    voReference = cVOReference()
-    ready = False
-    voFilename = ""
-    subFilename = ""
-    peakFilename = ""
-    projectFilename = ""
-
     def __init__(self):
         super(Model, self).__init__()
         Gst.init(None)
@@ -36,6 +26,7 @@ class Model(GObject.GObject):
         self.subFilename = ""
         self.peakFilename = ""
         self.projectFilename = ""
+        self.audioDuration = 0
 
     def setup_audio(self, buffers):
         self.audio = Audio(*buffers)
@@ -49,8 +40,8 @@ class Model(GObject.GObject):
         dataFile = load(f)
         hiAudio = dataFile['arr_0']
         lowAudio = dataFile['arr_1']
+        self.audioDuration = int(dataFile['arr_2'][0] * 1000)
         f.close()
         self.audio = Audio(hiAudio, lowAudio)
-        self.video.calc_duration()
         self.ready = True
         self.emit("audio-ready")

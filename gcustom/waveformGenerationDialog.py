@@ -24,6 +24,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.add(self.progressBar)
         self.set_resizable(False)
         self.show_all()
+        self.audioDuration = 0
         window = self.get_window()
         if window:
             window.set_functions(0)
@@ -36,7 +37,7 @@ class cWaveformGenerationDialog(Gtk.Window):
     def process_wav(self):
         os.rename(self.audioFile + '.raw', self.audioFile)
         audioSize = os.stat(self.audioFile).st_size
-        audioDuration = audioSize / 8000.0
+        self.audioDuration = audioSize / 8.0
         if audioSize <= 0:
             return
         dataPoints = self.audioDuration / 10
@@ -71,7 +72,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.process_messages()
 
         with open(self.audioFile, 'wb') as f:
-            savez(f, hiAudio, lowAudio)
+            savez(f, hiAudio, lowAudio, numarray([self.audioDuration]))
 
     def run(self):
         self.show()

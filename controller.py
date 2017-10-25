@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('GObject', '2.0')
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk, GObject, GdkX11
 from subtitles import timeStamp
 from subtitles import subRec
 from subutils import ms2ts, is_timestamp, ts2ms
@@ -67,6 +67,8 @@ class Controller:
         self.history = cHistory()
 
         self.videoWidgetIsSet = False
+        self.videoDuration = 0
+        self.audioDuration = 0
 
         try:
             makedirs(appdirs.user_config_dir('xSubEdit', 'jtapps'))
@@ -146,7 +148,6 @@ class Controller:
 
         model.connect('audio-ready', self.on_audio_ready)
         model.video.connect('position-update', self.on_video_position)
-        model.video.connect('videoDuration-Ready', self.on_videoDuration_Ready)
         model.subtitles.connect('buffer-changed', self.on_sub_buffer_changed)
 
         view['subtitles'].set_model(self.model.subtitles.get_model())
@@ -266,7 +267,7 @@ class Controller:
         cSplitSrtDialog(self.view, self.model.subFilename, self.model.subtitles.get_sub_list())
 
     def on_TB_visual_sync(self, sender):
-        if self.view['audio'].videoDuration == 0:
+        if not self.has_audio_duration():
             return
         subs = self.model.subtitles.get_sub_list()
         if len(subs) == 0:
@@ -280,7 +281,7 @@ class Controller:
         slist_before = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
         self.vSyncWidget = cSyncAudioWidget(self.view.widgets['audio-scale-container'], self.view['audio'])
         self.vSyncWidget.subtitlesModel = self.model.subtitles
-        self.vSyncWidget.videoDuration = self.model.video.videoDuration / 1000000.0
+        self.vSyncWidget.audioDuration = self.audioDuration / 1000
         self.vSyncWidget.audioModel = self.model.audio
         self.vSyncWidget.sceneModel = self.model.scenes
         self.vSyncWidget.destroy_signal_id = self.vSyncWidget.connect('destroy', self.on_vsync_destroy, slist_before)
@@ -405,7 +406,7 @@ class Controller:
             return False
 
     def on_TB_import_srt(self, widget):
-        if self.view['audio'].videoDuration == 0:
+        if not self.has_audio_duration():
             return
         dialog = Gtk.FileChooserDialog('Import SRT', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
         dialog.set_current_folder(split(self.model.subFilename)[0])
@@ -525,7 +526,7 @@ class Controller:
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
             self.view['audio'].center_active_sub()
             self.model.video.pause()
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
 
     def set_video_widget(self):
@@ -549,8 +550,10 @@ class Controller:
     def on_sub_buffer_changed(self, sender):
         self.view['audio'].invalidateCanvas()
 
-    def on_videoDuration_Ready(self, sender, value):
-        self.view['audio'].videoDuration = value / 1000000.0
+    def on_update_audio_duration(self, sender, value):
+        self.audioDuration = value
+        self.model.video.set_duration(value)
+        self.view['audio'].audioDuration = value / 1000
         self.view['audio'].queue_draw()
 
     def preferences_clicked(self, sender):
@@ -580,7 +583,7 @@ class Controller:
                 self.save_subs_info()
             save_changes_dialog.destroy()
         else:
-            if self.view['audio'].videoDuration != 0:
+            if self.has_audio_duration():
                 self.save_subs_info()
 
         if hasattr(self, 'scenedetect'):
@@ -706,18 +709,18 @@ class Controller:
 
     def on_key_release_vsync(self, widget, event):
         if event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
-            if self.vSyncWidget.videoDuration == 0:
+            if self.vSyncWidget.audioDuration == 0:
                 return
             if self.model.video.is_playing():
                 self.model.video.pause()
             else:
-                self.model.video.set_videoPosition(int(self.vSyncWidget.videoSegment[0]) / float(self.vSyncWidget.videoDuration))
-                self.model.video.set_segment((self.vSyncWidget.videoSegment[0],  self.vSyncWidget.videoDuration))
+                self.model.video.set_videoPosition(self.vSyncWidget.videoSegment[0])
+                self.model.video.set_segment((self.vSyncWidget.videoSegment[0], self.vSyncWidget.audioDuration))
                 self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
-            if self.vSyncWidget.videoDuration == 0:
+            if self.vSyncWidget.audioDuration == 0:
                 return
-            self.model.video.set_videoPosition(int(self.vSyncWidget.videoSegment[0]) / float(self.vSyncWidget.videoDuration))
+            self.model.video.set_videoPosition(self.vSyncWidget.videoSegment[0])
             self.model.video.set_segment(self.vSyncWidget.videoSegment)
             self.model.video.play()
         elif event.keyval == Gdk.KEY_Escape:
@@ -741,7 +744,7 @@ class Controller:
                 return
             self.view['audio'].activeSub = prev
             path = self.model.subtitles.get_sub_path(prev)
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             if path != None:
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
@@ -750,22 +753,22 @@ class Controller:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif event.keyval in [Gdk.KEY_F12, Gdk.KEY_F, Gdk.KEY_f, 2006, 2038] and not event.state & Gdk.ModifierType.CONTROL_MASK:
-            if self.view['audio'].videoDuration == 0:
+            if self.view['audio'].audioDuration == 0:
                 return
             if self.model.video.is_playing():
                 self.model.video.pause()
             else:
-                self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
-                self.model.video.set_segment((self.view['audio'].videoSegment[0],  self.view['audio'].videoDuration))
+                self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
+                self.model.video.set_segment((self.view['audio'].videoSegment[0],  self.view['audio'].audioDuration))
                 self.model.video.play()
         elif event.keyval in [Gdk.KEY_p,  Gdk.KEY_P, 2000, 2032]:
-            if self.view['audio'].videoDuration == 0:
+            if self.view['audio'].audioDuration == 0:
                 return
             if self.model.video.is_playing():
                 self.model.video.pause()
             else:
-                self.model.video.set_videoPosition(int(self.view['audio'].pos) / float(self.view['audio'].videoDuration))
-                self.model.video.set_segment((self.view['audio'].pos,  self.view['audio'].videoDuration))
+                self.model.video.set_videoPosition(self.view['audio'].pos)
+                self.model.video.set_segment((self.view['audio'].pos, self.view['audio'].audioDuration))
                 self.model.video.play()
         elif event.keyval == Gdk.KEY_F6:
             if self.view['audio'].activeSub == None:
@@ -780,7 +783,7 @@ class Controller:
                 return
             self.view['audio'].activeSub = nexts
             path = self.model.subtitles.get_sub_path(nexts)
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             if path != None:
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
@@ -789,9 +792,9 @@ class Controller:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
-            if self.view['audio'].videoDuration == 0:
+            if not self.has_audio_duration():
                 return
-            self.model.video.set_videoPosition(int(self.view['audio'].videoSegment[0]) / float(self.view['audio'].videoDuration))
+            self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif (event.keyval in [Gdk.KEY_Z, Gdk.KEY_z, 2022, 1990]) and event.state & Gdk.ModifierType.CONTROL_MASK:
@@ -813,7 +816,7 @@ class Controller:
             cSearchReplaceDialog(self.view, self.view['subtitles'], self.model.subtitles, self.history)
         elif (event.keyval in [Gdk.KEY_plus, Gdk.KEY_KP_Add]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             audio = self.view['audio']
-            if audio.videoDuration == 0:
+            if audio.audioDuration == 0:
                 return
             cr = audio.cursor
             if audio.lowms > cr or audio.highms < cr:
@@ -823,7 +826,7 @@ class Controller:
             audio.zoom(Gdk.ScrollDirection.UP, pointx)
         elif (event.keyval in [Gdk.KEY_minus, Gdk.KEY_KP_Subtract]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             audio = self.view['audio']
-            if audio.videoDuration == 0:
+            if audio.audioDuration == 0:
                 return
             cr = audio.cursor
             if audio.lowms > cr or audio.highms < cr:
@@ -880,7 +883,9 @@ class Controller:
             if not (exists(projectFiles['peakFile'].decode('utf-8'))):
                 wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, 8000)
                 wgDialog.run()
+
             self.model.get_waveform()
+            self.on_update_audio_duration(None, self.model.audioDuration)
 
             if exists(projectFiles['subFile'].decode('utf-8')):
                 subs = srtFile(projectFiles['subFile']).read_from_file()
@@ -981,6 +986,7 @@ class Controller:
             wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename, 8000)
             wgDialog.run()
         self.model.get_waveform()
+        self.on_update_audio_duration(None, self.model.audioDuration)
 
     def on_project_settings_clicked(self, sender):
         if not exists(self.model.projectFilename.decode('utf-8')):
@@ -1251,7 +1257,7 @@ class Controller:
             prevSub = self.model.subtitles.get_sub_before_timeStamp(mouse_msec)
             prevSub = prevSub if prevSub != None else subRec(0, 0, '')
             nextSub = self.model.subtitles.get_sub_after_timeStamp(mouse_msec)
-            nextSub = nextSub if nextSub != None else subRec(self.view['audio'].videoDuration,self.view['audio'].videoDuration,'')
+            nextSub = nextSub if nextSub != None else subRec(self.view['audio'].audioDuration, self.view['audio'].audioDuration,'')
             lowLimit = int(mouse_msec if mouse_msec > prevSub.stopTime + 120 else prevSub.stopTime + 120)
             highLimit = int(mouse_msec + 1000 if mouse_msec + 1000 < nextSub.startTime - 120 else nextSub.startTime - 120)
             if highLimit - lowLimit < 1000:
@@ -1367,7 +1373,7 @@ class Controller:
             else:
                 self.model.video.play()
         elif event.button == 3:
-            vready = self.view['audio'].videoDuration != 0
+            vready = self.has_audio_duration()
             self.view['VCM-SceneDetect'].set_sensitive(vready)
             if hasattr(self, 'scenedetect') and self.scenedetect.is_active():
                 self.view['VCM-SceneDetect'].hide()
@@ -1393,7 +1399,7 @@ class Controller:
         self.vSyncWidget.pos = self.view['audio'].pos
 
         # Follow video position in audioview
-        pos = self.vSyncWidget.pos / float(self.vSyncWidget.videoDuration)
+        pos = self.vSyncWidget.pos / float(self.vSyncWidget.audioDuration)
         vup = self.vSyncWidget.viewportUpper
         vlow = self.vSyncWidget.viewportLower
         vdiff = vup - vlow
@@ -1414,9 +1420,10 @@ class Controller:
                 self.vSyncWidget.viewportUpper = vdiff
             self.vSyncWidget.queue_draw()
 
-    def on_video_position(self, sender, position):
-        self.view['audio'].pos = int(self.model.video.get_videoDuration()*position/1000000.0)
-        self.view['position-label'].set_label('Position: '+ms2ts(int(self.model.video.get_videoDuration()*position/1000000.0))+' ')
+    def on_video_position(self, sender, _position):
+        position = _position / 1000.0
+        self.view['audio'].pos = int(self.audioDuration * position)
+        self.view['position-label'].set_label('Position: %s ' % ms2ts(int( position * self.audioDuration)))
 
         # Show Subtitle on Video
         overSub = self.model.subtitles.inside_sub(self.view['audio'].pos)
@@ -1424,7 +1431,7 @@ class Controller:
         self.model.video.set_subtitle(filter_markup(text))
 
         # Follow video position in audioview
-        pos = self.view['audio'].pos / float(self.view['audio'].videoDuration)
+        pos = self.view['audio'].pos / float(self.view['audio'].audioDuration)
         vup = self.view['audio'].viewportUpper
         vlow = self.view['audio'].viewportLower
         vdiff = vup - vlow
@@ -1456,6 +1463,12 @@ class Controller:
 
         if hasattr(self, 'vSyncWidget') and self.vSyncWidget.props.visible:
             self.on_video_position_vsync()
+
+    def has_audio_duration(self):
+        return self.audioDuration != 0
+
+    def has_video_duration(self):
+        return self.videoDuration != 0
 
     def check_video_file_compatibility(self, filename):
         if platform.system() != 'Windows':

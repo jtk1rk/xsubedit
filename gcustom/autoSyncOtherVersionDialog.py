@@ -3,14 +3,12 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from rawGenerationDialog import cRawGenerationDialog
 from progressBarDialog import cProgressBarDialog
-from utils import isint
+from utils import isint, iround
 from os.path import split, splitext, join, exists
 from subfile import srtFile
 from subtitles import subRec
 import autoSyncTools
 import subfile
-
-iround = lambda x: int(round(x))
 
 def explode_path(fname):
     path, filename = split(fname)
@@ -115,6 +113,36 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
         elif event.keyval == Gdk.KEY_Return:
             self.on_btn_ok(None)
 
+    def match_sub(src, dst, sub):
+        return autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
+
+    def match_low(src, dst, subList):
+        if len(subList) < 10:
+            return None
+        for i in xrange(10):
+            sub = subList[5 + i]
+            res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
+            if not (res is None):
+                return res
+
+    def match_high(src, dst, subList):
+        if len(subList) < 10:
+            return None
+        for i in xrange(10):
+            sub = subList[-1 * i - 5]
+            res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
+            if not (res is None):
+                return res
+
+    def match_middle(src, dst, subList):
+        if len(subList) < 10:
+            return None
+        for i in xrange(10):
+            sub = subList[ iround( (len(subList) / 2.0) - 5 + i ) ]
+            res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
+            if not (res is None):
+                return res
+
     def run(self):
         if not hasattr(self, 'dst_v_fname'):
             self.close()
@@ -152,32 +180,23 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
         pb.set_progress(idx / float(len(self.subs)))
         pb.update_info('Matching subtitle %d / %d' % (idx, len(self.subs)))
 
-        last_failed = False
-        for sub_enum in enumerate(self.subs[1:]):
-            (idx, sub) = sub_enum
-            self.process_messages()
-            # Calc offset
-            if len(dst_sublist) >= 2 and abs(int(dst_sublist[-1].startTime - dst_sublist[-2].startTime)) > 5000:
-                offset = int(dst_sublist[-2].startTime)
-            else:
-                offset = int(dst_sublist[-1].startTime) if len(dst_sublist) > 0 else 0
-            # Calc break_limit
-            _break_limit = int(self.subs[idx - 1].startTime - sub.startTime) * 5 if len(self.subs) > 1 and idx > 1 and not last_failed else -1
-            res = autoSyncTools.match(src_spec, dst_spec, int(sub.startTime), int(sub.stopTime), offset, break_limit = _break_limit)
+        # Step 1: match a low, middle and high subs
+        sl = match_low(src_spec, dst_spec, self.subs)
+        sm = match_middle(src_spec, dst_spec, self.subs)
+        sh = match_high(src_spec, dst_spec, self.subs)
+        if any([i is None for i in [sl, sm, sh]]):
+            return False # Failed to auto sync
+        # Step 2: Calc the "line"
+        rate1 = int(sm.startTime) - int(sl.startTime)
+        rate2 = int(sh.startTime) - int(sm.startTime)
+        if 0.95 < rate2 / rate1 < 1.05:
+            pass # we are done, simple scaling of the subList
+        else:
+            pass # split into two lists, fist half and second half
+                 # Then run the whole process for each lists
 
-            if not(res is None):
-                last_failed = False
-                dst_sublist.append(subRec(int(res[0]), int(res[1]), sub.text))
-                print res
-                print dst_sublist[-1]
-            else:
-                last_failed = True
-                print '----Failed----'
-                print sub
-                print '--------------'
-                missing_subs.append(sub)
-                if idx > 1:
-                    exit()
+
+        self.process_messages()
         pb.close()
 
         # save new sublist

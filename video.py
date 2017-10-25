@@ -11,15 +11,15 @@ class Video(GObject.GObject):
                      'videoDuration-Ready' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)) # long
                      }
 
-    videoFilename = None
-    videoDuration = 0
-    videoPosition = 0
-    ready = False
-    play_update_handle = None
-
     def __init__(self):
         super(Video, self).__init__()
         Gst.init(None)
+
+        self.videoFilename = None
+        self.videoDuration = 0
+        self.videoPosition = 0
+        self.ready = False
+        self.play_update_handle = None
         self.__last_segment = None
         gstbin = Gst.Bin.new('my-gstbin')
         self.textoverlay = Gst.ElementFactory.make('textoverlay')
@@ -41,6 +41,10 @@ class Video(GObject.GObject):
         self.playbus.add_signal_watch()
         self.playbus.connect('message', self.on_message)
 
+    def set_duration(self, value):
+        if self.videoDuration == 0:
+            self.videoDuration = value * 10**3
+
     def on_message(self, bus, message):
         t = message.type
         if t == Gst.MessageType.EOS:
@@ -49,10 +53,13 @@ class Video(GObject.GObject):
         elif t == Gst.MessageType.WARNING:
             err,  debug = message.parse_warning()
             print 'Error %s ' % err, debug
+        elif t == Gst.MessageType.ERROR:
+            err, debug = message.parse_error()
+            print 'Error %s ' % err, debug
 
     def set_segment(self, segment):
         if segment != self.__last_segment:
-            self.playbin.seek(1.0, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, Gst.SeekType.SET, segment[0] * 1000000, Gst.SeekType.SET, segment[1] * 1000000)
+            self.playbin.seek(1.0, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, Gst.SeekType.SET, segment[0] * 10**6, Gst.SeekType.SET, segment[1] * 10**6)
             self.__last_segment = segment
 
     def set_video_widget(self, widget):
@@ -60,41 +67,12 @@ class Video(GObject.GObject):
 
     def set_video_filename(self, filename):
         self.videoFilename = filename;
-        self.playbin.set_property('uri', 'file:///'+filename)
+        self.playbin.set_property('uri', 'file:///' + filename)
         self.playbin.set_state(Gst.State.PAUSED)
         if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
             return
         self.ready = True
         self.playing = False
-        self.playbin.set_state(Gst.State.PLAYING)
-        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
-        self.calc_duration()
-        self.playbin.set_state(Gst.State.PAUSED)
-
-    def set_video_filename_old(self, filename):
-        self.videoFilename = filename;
-        self.playbin.set_property('uri', 'file:///'+filename)
-        self.playbin.set_state(Gst.State.PAUSED)
-        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
-            return
-        self.ready = True
-        self.playing = False
-        self.playbin.set_state(Gst.State.PLAYING)
-        self.playbin.get_state(Gst.CLOCK_TIME_NONE)
-        self.calc_duration()
-        self.playbin.set_state(Gst.State.PAUSED)
-
-    def set_video_filename(self, filename):
-        self.videoFilename = filename;
-        self.playbin.set_property('uri', 'file:///'+filename)
-        self.playbin.set_state(Gst.State.PAUSED)
-        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
-            return
-        self.ready = True
-        self.playing = False
-        self.playbin.set_state(Gst.State.PLAYING)
-        self.calc_duration()
-        self.playbin.set_state(Gst.State.PAUSED)
 
     def set_audio_resolution(self, resolution):
         self.audio_resolution = resolution
@@ -109,9 +87,10 @@ class Video(GObject.GObject):
     def calc_duration(self):
         try:
             self.videoDuration = self.playbin.query_duration(Gst.Format.TIME)[1]
-            self.emit("videoDuration-Ready", self.videoDuration)
+            if self.videoDuration != 0:
+                self.emit("videoDuration-Ready", self.videoDuration)
         except:
-            pass
+            print "Error querying video duration"
 
     def play(self):
         if self.videoDuration == 0:
@@ -145,11 +124,9 @@ class Video(GObject.GObject):
     def set_videoPosition(self, pos):
         if self.videoDuration == 0:
             self.calc_duration()
-#        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, self.videoDuration * pos)
-        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, self.videoDuration * pos)
-        self.videoPosition = pos
+        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, pos * 10**3)
         self.__last_segment = None
-        self.emit("position-update", self.videoPosition)
+        self.position_update()
 
     def get_videoDuration(self):
         return self.videoDuration
