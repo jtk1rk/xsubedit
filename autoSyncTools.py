@@ -3,7 +3,7 @@ from numpy import array, argmin, argmax
 from scipy import signal
 import numpy as np
 from math import floor, ceil
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from subutils import ms2ts
 from collections import deque
 from random import random
@@ -59,27 +59,27 @@ def gen_match_array(slc, spec, doffset, break_limit):
         res.append( compute_match( slc, spec[2][:, i + offset : i + offset + slc.shape[1] ] ) )
         if i % 250 == 0 and i > 0 and __name__ == '__main__' and False:
             tst = array(res)
-            plt.plot(tst)
-            plt.plot([tst.mean()] * len(tst))
-            plt.plot([tst.mean() - tst.std()] * len(tst))
-            plt.plot([tst.mean() + tst.std()] * len(tst))
-            plt.plot(np.gradient(tst))
-            print ms2ts(idx2ms(offset + dropped, spec))
-            plt.show()
+            #plt.plot(tst)
+            #plt.plot([tst.mean()] * len(tst))
+            #plt.plot([tst.mean() - tst.std()] * len(tst))
+            #plt.plot([tst.mean() + tst.std()] * len(tst))
+            #plt.plot(np.gradient(tst))
+            #print ms2ts(idx2ms(offset + dropped, spec))
+            #plt.show()
         dropped += 0 if i < 250 else 1
         if (i % 25 == 0 and i > 100 and stat_test(res)) or (0 < break_limit < i):
             break
 
     if __name__ == '__main__' and stat_test(res):
         res = array(res)
-        plt.plot(res)
-        plt.plot([res.mean()] * len(res))
-        plt.plot(np.gradient(res))
+        #plt.plot(res)
+        #plt.plot([res.mean()] * len(res))
+        #plt.plot(np.gradient(res))
         grad = np.gradient(res)
         gmin_idx = argmin(grad)
         gmax_idx = argmax(grad)
         print abs(grad[gmin_idx] - grad[gmax_idx]), grad.mean(), grad.std()
-        plt.show()
+        #plt.show()
 
     res = array(res)
     grad = np.gradient(res)
