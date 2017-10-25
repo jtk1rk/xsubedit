@@ -460,6 +460,8 @@ class Controller:
                         if path != None:
                             with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
                                 self.view['subtitles'].set_cursor(path)
+                                self.view['audio'].activeSub = sub
+                                self.view['audio'].center_active_sub()
 
     def on_TB_check_clicked(self, widget):
         if self.model.subtitles.is_empty():

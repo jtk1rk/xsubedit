@@ -2,6 +2,8 @@ import os
 import site
 import sys
 import glob
+import scipy
+from os.path import dirname
 
 #cx_freeze
 from cx_Freeze import setup, Executable
@@ -143,24 +145,27 @@ for lib in gtkLibs:
 lib = 'enchant'
 includeFiles.append((os.path.join(siteDir, lib), lib))
 
+includeFiles.append(dirname(scipy.__file__))
+
 base = None
 if sys.platform == "win32":
     base = "Win32GUI"
 
 setup(
     name = "xSubEdit",
-    version = "1.0",
+    version = "1.9.2",
     description = "Subtitle Editor for xSubs",
     options = {'build_exe' : {
 #        'compressed': True,
-        'includes': ["gi",'numpy.core._methods','numpy.lib.format'],
+        'includes': ["gi",'numpy.core._methods','numpy.lib.format', 'numpy.matlib', 'timeit'],
         'excludes': [],#['wx', 'email', 'pydoc_data', 'curses', 'tk'],
         'packages': ["gi", 'idna'],
         'include_files': includeFiles
     }},
     executables = [
-        Executable("main.py",
-                   base=base
+        Executable("__main__.py",
+                   base=base,
+                   targetName="xsubedit.exe"
                    )
     ]
 )

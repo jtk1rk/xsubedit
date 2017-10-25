@@ -13,3 +13,4 @@ import sys
 GObject.threads_init()
 win = Controller(Model(), View('xSubEdit 1.9.2'))
 Gtk.main()
+sys.exit(1)
