@@ -120,7 +120,7 @@ class View(Gtk.Window):
         self.widgets['toolbar'].add(self.widgets['separator3TB'])
         self.widgets['toolbar'].add(self.widgets['importSRTTB'])
         self.widgets['toolbar'].add(self.widgets['splitSubsTB'])
-        self.widgets['toolbar'].add(self.widgets['autoSyncOtherVersionTB'])
+        #self.widgets['toolbar'].add(self.widgets['autoSyncOtherVersionTB'])
         self.widgets['toolbar'].add(self.widgets['checkTB'])
         self.widgets['toolbar'].add(self.widgets['visualSyncTB'])
 
