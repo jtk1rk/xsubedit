@@ -838,6 +838,20 @@ class Controller:
             audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
         elif (event.keyval  == Gdk.KEY_Delete):
             self.on_TVCM_Delete(None)
+        elif (event.keyval in [Gdk.KEY_G, Gdk.KEY_g]):
+            for i, row in enumerate(self.model.subtitles.get_model()):
+                sub = row[self.model.subtitles.COL_SUB]
+                for key in sub.info:
+                    if key != 'Audio-Last_Edited':
+                        continue
+                    path = self.model.subtitles.get_sub_path(sub)
+                    if path is None:
+                        break
+                    with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
+                        self.view['subtitles'].set_cursor(path)
+                        self.view['audio'].activeSub = sub
+                        self.view['audio'].center_active_sub()
+                    break
 
     def on_key_release(self, widget, event):
         self.on_key_release_base(widget, event)

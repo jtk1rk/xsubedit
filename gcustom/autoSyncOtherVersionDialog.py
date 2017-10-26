@@ -190,7 +190,14 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
         rate1 = int(sm.startTime) - int(sl.startTime)
         rate2 = int(sh.startTime) - int(sm.startTime)
         if 0.95 < rate2 / rate1 < 1.05:
-            pass # we are done, simple scaling of the subList
+            dst_sublist = [subRec(sub.startTime, sub.stopTime, sub.text) for sub in self.subs]
+            d0 = int(dst_sublist[0].startTime)
+            drate = (rate1 + rate2) / 2.0
+            for sub in dst_sublist:
+                sub.startTime -= d0
+                sub.stopTime -= d0
+                srate = (sub - d0) / len(self.subs)
+
         else:
             pass # split into two lists, fist half and second half
                  # Then run the whole process for each lists
