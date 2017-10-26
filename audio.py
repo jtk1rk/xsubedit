@@ -1,4 +1,4 @@
-from numpy import exp
+from numpy import exp, hstack
 from utils import StretchableList
 
 iround = lambda x: int(round(x))
@@ -16,6 +16,8 @@ class Audio(object):
         self.width = 100
         self.hiData = self.__hiData.copy()
         self.lowData = self.__lowData.copy()
+        self.hiData = hstack(([0] * 4, self.hiData))
+        self.lowData = hstack(([0] * 4, self.lowData))
         self.dataSize = len(self.hiData)
 
     def set_scale(self, type, value):
@@ -57,8 +59,8 @@ class Audio(object):
                     idx = lowerIDX + i * spp
                     if iround(idx) > self.dataSize:
                         continue
-                    hiPeak = self.hiData[iround(idx) : iround(idx + spp)].max()
-                    lowPeak = self.lowData[iround(idx) : iround(idx + spp)].max()
+                    hiPeak = self.hiData[iround(idx) : iround(idx + spp) ].max()
+                    lowPeak = self.lowData[iround(idx) : iround(idx + spp) ].max()
                     res.append((hiPeak, lowPeak))
             else:
                 r = self.width / float(upperIDX - lowerIDX)

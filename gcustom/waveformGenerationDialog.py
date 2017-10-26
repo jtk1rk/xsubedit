@@ -7,6 +7,7 @@ from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
 from utils import iround
 import os
+from math import ceil
 
 class cWaveformGenerationDialog(Gtk.Window):
     def __init__(self, parent, video_file, audio_file, audio_rate):
@@ -24,7 +25,6 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.add(self.progressBar)
         self.set_resizable(False)
         self.show_all()
-        self.audioDuration = 0
         window = self.get_window()
         if window:
             window.set_functions(0)
@@ -37,28 +37,22 @@ class cWaveformGenerationDialog(Gtk.Window):
     def process_wav(self):
         os.rename(self.audioFile + '.raw', self.audioFile)
         audioSize = os.stat(self.audioFile).st_size
-        self.audioDuration = audioSize / 8.0
+        audioDuration = audioSize / 8.0
         if audioSize <= 0:
             return
-        dataPoints = self.audioDuration / 10
-        samplesPerDataPoint = audioSize / dataPoints
+        samplesPerDataPoint = 80
+        dataPoints = ceil(audioSize / float(samplesPerDataPoint))
 
         with open(self.audioFile, 'rb') as f:
-            tmpData = f.read(iround(samplesPerDataPoint / 2.0))
-            tmpData = map(lambda i: ord(i) - 128, tmpData)
+
             hiAudio = []
             lowAudio = []
             dp_div = iround(dataPoints / 10.0)
-            samplesPerDataPoint = iround(samplesPerDataPoint)
 
             for point in xrange(iround(dataPoints)):
-                if len(tmpData) == 0:
-                    hiAudio.append(0)
-                    lowAudio.append(0)
-                else:
-                    hiAudio.append(abs(max(tmpData)-128))
-                    lowAudio.append(-abs(min(tmpData)-128))
                 tmpData = bytearray(f.read(samplesPerDataPoint))
+                hiAudio.append(abs(max(tmpData)-128))
+                lowAudio.append(-abs(min(tmpData)-128))
                 if point % dp_div == 0:
                     self.set_progress(0.5 + (point / dataPoints) / 2 )
                     self.process_messages()
@@ -72,7 +66,7 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.process_messages()
 
         with open(self.audioFile, 'wb') as f:
-            savez(f, hiAudio, lowAudio, numarray([self.audioDuration]))
+            savez(f, hiAudio, lowAudio, numarray([audioDuration]))
 
     def run(self):
         self.show()
