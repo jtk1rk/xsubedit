@@ -8,6 +8,7 @@ import time
 import itertools
 from mparser import MarkupParser, Tag
 from mgen import MarkupGenerator
+from os import popen
 
 RUN_TIMESTAMP = time.time()
 UTF8_BOM = '\xef\xbb\xbf'
@@ -172,6 +173,9 @@ def isint(item):
     except ValueError:
         return False
 
+def isNumber(item):
+    return isfloat(item) or isint(item)
+
 def find_all_str(s, substring):
     """Finds all occurences of a substring in a string
        and returns the result as a list of tuples (begin, end)"""
@@ -221,3 +225,16 @@ def untagged_text(text):
     except:
         return text
     return m.text
+
+def mediaDur(filename):
+    if platform.system() == 'Windows':
+        exec_cmd = 'mediainfo --Inform="Video;%%Duration%%" "%s"' % filename.decode('utf-8').encode('cp1253')
+    else:
+        exec_cmd = 'mediainfo --Inform="Video;%%Duration%%" "%s"' % filename
+    output = popen(exec_cmd).read().strip()
+    return float(output) if isNumber(output) else None
+
+def mean(arr):
+    if len(arr) == 0:
+        raise ValueError('Cannot calculate the mean value of an empty array.')
+    return sum(arr) / len(arr)
