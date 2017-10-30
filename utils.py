@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
-from os.path import exists, relpath, split,  abspath
+from os.path import exists, split
 import pickle
 import platform
 import time
@@ -12,7 +12,6 @@ from os import popen
 
 RUN_TIMESTAMP = time.time()
 UTF8_BOM = '\xef\xbb\xbf'
-DIR_DELIMITER = '/' if platform.system() == 'Linux' else '\\'
 
 iround = lambda x: int(round(x))
 
@@ -134,15 +133,6 @@ def set_process_name():
     buff = create_string_buffer(len(name) + 1)
     buff.value = name
     libc.prctl(15, byref(buff), 0, 0, 0)
-
-def get_rel_path(refpath, filename):
-    tmpstr = ''
-    if filename == '':
-        return ''
-    if platform.system() == 'Windows' and filename[1] != ':':
-        tmpstr = abspath(filename)
-        tmpstr = tmpstr[:2]
-    return relpath(split(tmpstr+filename)[0], tmpstr+refpath)+ DIR_DELIMITER + split(tmpstr+filename)[1]
 
 def pairwise(iterable):
     a, b = itertools.tee(iterable)

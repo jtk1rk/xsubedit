@@ -95,7 +95,7 @@ class cTextEditDialog(Gtk.Dialog):
         self.text_view.set_size_request(-1, 50)
         self.helper_text_view = Gtk.TextView()
         self.helper_text_view.set_property('editable', False)
-        self.helper_text_view.set_property('can-focus', False)
+        #self.helper_text_view.set_property('can-focus', False)
         self.text_view_box.add(self.text_view)
         self.text_view_box.add(self.helper_text_view)
 

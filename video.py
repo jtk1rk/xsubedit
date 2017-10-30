@@ -133,33 +133,3 @@ class Video(GObject.GObject):
 
     def get_videoPosition(self):
         return self.videoPosition
-
-class vobj(GObject.GObject):
-    def __init__(self, filename):
-        # INIT
-        super(vobj, self).__init__()
-        Gst.init(None)
-        self.videoDuration = 0
-        gstbin = Gst.Bin.new('my-gstbin1')
-        self.sink = Gst.ElementFactory.make('fakesink')
-        gstbin.add(self.sink)
-        self.playbin = Gst.ElementFactory.make('playbin')
-        self.playbin.set_property('video-sink', gstbin)
-        self.playbus = self.playbin.get_bus()
-        # Getting duration
-        self.playbin.set_property('uri', 'file:///'+filename)
-        self.playbin.set_state(Gst.State.PAUSED)
-        if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
-            return
-        self.playbin.set_state(Gst.State.PLAYING)
-        self.calc_duration()
-        self.playbin.set_state(Gst.State.PAUSED)
-
-    def calc_duration(self):
-        try:
-            self.videoDuration = self.playbin.query_duration(Gst.Format.TIME)[1]
-        except:
-            pass
-
-    def get_videoDuration(self):
-        return self.videoDuration
