@@ -78,14 +78,6 @@ class Controller:
 
         # Load Thesaurus
         path = ''
-        #if exists('share/thesaurus.pz'):
-        #    path = 'share/thesaurus.pz'
-        #elif exists('/usr/share/xsubedit/thesaurus.pz'):
-        #    path = '/usr/share/xsubedit/thesaurus.pz'
-        #elif exists('/usr/local/share/xsubedit/thesaurus.pz'):
-        #    path = '/usr/local/share/xsubedit/thesaurus.pz'
-        #else:
-        #    raise IOError('Cannot find thesaurus.pz')
 
         if cfile('share/thesaurus.pz').exists:
             path = 'share/thesaurus.pz'
@@ -98,7 +90,6 @@ class Controller:
 
         view['subtitles'].thesaurus = cThesaurus(path)
 
-        #self.preferences = cPreferences(appdirs.user_config_dir('xSubEdit', 'jtapps') + DIR_DELIMITER + 'xSubEdit.conf') #preferences do not go inside self.state
         self.preferences = cPreferences(join(appdirs.user_config_dir('xSubEdit', 'jtapps'),'xSubEdit.conf')) #preferences do not go inside self.state
 
         self.cursorLeftMargin = Gdk.Cursor(Gdk.CursorType.LEFT_SIDE)
@@ -872,7 +863,7 @@ class Controller:
 
     def on_new_button_clicked(self, widget):
         self.set_video_widget()
-        dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': ''})
+        dialog = cProjectSettingsDialog(self.view, {'videoFile': '', 'subFile': '', 'projectFile': '', 'voFile': '', 'subPolicy': 'Normal'})
         res = dialog.run()
         projectFiles = None
         if res == Gtk.ResponseType.OK:
@@ -881,34 +872,28 @@ class Controller:
                 projectFiles['voFile'] = ''
         dialog.destroy()
         if projectFiles != None:
-#            refpath = split(projectFiles['projectFile'])[0]
             refpath = cfile(projectFiles['projectFile']).abspath
-            #projectFiles['videoFile'] = self.get_rel_path(refpath, projectFiles['videoFile'])
             projectFiles['videoFile'] = cfile(projectFiles['videoFile'], refpath = refpath).relfull
-            #projectFiles['subFile'] = get_rel_path(refpath, projectFiles['subFile'])
             projectFiles['subFile'] = cfile(projectFiles['subFile'], refpath = refpath).relfull
-            #projectFiles['voFile'] = get_rel_path(refpath, projectFiles['voFile']) if projectFiles['voFile'] != '' else ''
             projectFiles['voFile'] = cfile(projectFiles['voFile'], refpath = refpath).relfull
-            #projectFiles['peakFile'] = splitext(projectFiles['videoFile'])[0] + '.pkf'
             tmp = cfile(projectFiles['videoFile'])
             tmp.change_ext('.pkf')
             projectFiles['peakFile'] = tmp.relfull
             self.model.projectFilename = projectFiles['projectFile']
-            #self.view.set_title(splitext(projectFiles['videoFile'])[0])
             self.view.set_title( cfile(projectFiles['videoFile']).base )
 
-            #tmpstr = self.check_video_file_compatibility(normpath(join(refpath, projectFiles['videoFile'])))
-            #projectFiles['videoFile'] = get_rel_path(refpath, tmpstr)
+            orig_video = cfile(projectFiles['videoFile'], refpath = refpath).full_path
+            tmpstr = self.check_video_file_compatibility( cfile(projectFiles['videoFile'], refpath = refpath).full_path )
+            #projectFiles['videoFile'] =  cfile(tmpstr, refpath = refpath).relfull
+            projectFiles['videoFile'] = tmpstr
             pickle.dump(projectFiles, open(projectFiles['projectFile'].decode('utf-8'), 'wb'))
 
-            #projectFiles['videoFile'] = normpath(join(refpath, projectFiles['videoFile']))
             projectFiles['videoFile'] = cfile( projectFiles['videoFile'], refpath = refpath).full_path
-            #projectFiles['peakFile'] = normpath(join(refpath, projectFiles['peakFile']))
             projectFiles['peakFile'] = cfile(projectFiles['peakFile'], refpath = refpath).full_path
-            #projectFiles['subFile'] = normpath(join(refpath, projectFiles['subFile']))
-            projectFiles['subFile'] = cfile(projectFiles['subFile'], refpath = refpath).full_path
-            #projectFiles['voFile'] = normpath(join(refpath, projectFiles['voFile'])) if projectFiles['voFile'] != '' else ''
-            projectFiles['voFile'] = cfile(projectFiles['voFile'], refpath = refpath).full_path
+            subfile = cfile(projectFiles['subFile'], refpath = refpath)
+            projectFiles['subFile'] = subfile.full_path
+            vofile = cfile(projectFiles['voFile'], refpath = refpath)
+            projectFiles['voFile'] = vofile.full_path
             if projectFiles['videoFile'] != '':
                 self.model.video.set_video_filename(projectFiles['videoFile'])
             self.model.peakFilename = projectFiles['peakFile']
@@ -918,41 +903,48 @@ class Controller:
             self.preferences.update_mru(projectFiles['projectFile'])
             self.preferences.save()
 
-            #if not (exists(projectFiles['peakFile'].decode('utf-8'))):
             if not cfile(projectFiles['peakFile']).exists:
-                wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename)
+                wgDialog = cWaveformGenerationDialog(self.view, orig_video, self.model.peakFilename)
                 wgDialog.run()
 
             self.model.get_waveform()
             self.on_update_audio_duration(None, self.model.audioDuration)
 
-            #if exists(projectFiles['subFile'].decode('utf-8')):
-            if cfile(projectFiles['subFile']).exists:
-                subs = srtFile(projectFiles['subFile']).read_from_file()
-                self.model.subtitles.clear()
-                for item in subs:
-                    if projectFiles['voFile'] != '':
-                        item.text = ''
-                    self.model.subtitles.append(item)
+            if vofile.filename != '':
+                if not vofile.exists and subfile.exists:
+                    cfile(projectFiles['subFile']).copy(vofile.full_path)
+
+            self.model.subtitles.clear()
+            backup = subfile.obj_copy()
+            backup.change_base(backup.base + '-original-backup')
+            spol = projectFiles['subPolicy']
+
+            if subfile.exists:
+                if spol == 'Normal':
+                    subs = srtFile(subfile.full_path).read_from_file()
+                    do_all(self.model.subtitles.append, subs)
+                    self.model.subtitles.clear_all_modified_timestamps()
+                elif spol == 'Timestamps':
+                    subfile.copy(backup)
+                    gen_timestamp_srt_from_source(backup.full_path, subfile.full_path)
+                    subs = srtFile(subfile.full_path).read_from_file()
+                    do_all(self.model.subtitles.append, subs)
+                    self.model.subtitles.clear_all_modified_timestamps()
+                elif spol == 'Empty':
+                    subfile.copy(backup)
+                    subfile.delete()
+                    subfile.touch()
+            if spol == 'Fill_VO' and vofile.exists:
+                if subfile.exists:
+                    subfile.copy(backup)
+                vofile.copy(subfile)
+                subs = srtFile(subfile.full_path).read_from_file()
+                do_all(self.model.subtitles.append, subs)
                 self.model.subtitles.clear_all_modified_timestamps()
                 self.view['audio'].queue_draw()
 
-            #if exists(projectFiles['voFile'].decode('utf-8')):
-            if cfile(projectFiles['voFile']).exists:
-                subs = srtFile(projectFiles['voFile']).read_from_file()
-                self.model.voReference.set_data(subs)
-                self.model.subtitles.load_vo_data(self.model.voReference)
-                gen_timestamp_srt_from_source(projectFiles['voFile'], projectFiles['subFile'])
-            else:
-                #if exists(projectFiles['subFile']) and projectFiles['voFile'] != '':
-                if cfile(projectFiles['subFile']).exists and projectFiles['voFile'] != '':
-                    #copyfile(projectFiles['subFile'], projectFiles['voFile'])
-                    cfile(projectFiles['subFile']).copy(projectFiles['voFile'])
-                    subs = srtFile(projectFiles['voFile']).read_from_file()
-                    self.model.voReference.set_data(subs)
-                    self.model.voReference.filename = projectFiles['voFile']
-                    self.model.subtitles.load_vo_data(self.model.voReference)
-                    gen_timestamp_srt_from_source(projectFiles['voFile'], projectFiles['subFile'])
+            if projectFiles['voFile'] != '' and vofile.exists:
+                self.open_vo(vofile.full_path)
 
                 if self.preferences['Autosave']:
                     if self.autosaveHandle:
@@ -960,7 +952,7 @@ class Controller:
                         self.autosaveHandle = None
                     self.autosaveHandle = GObject.timeout_add_seconds(60, self.autosave)
 
-            if projectFiles['voFile'] == '':
+            if vofile.filename == '':
                 referenceCol = self.view['subtitles'].get_columns()[4]
                 referenceCol.props.visible = False
                 self.view['HCM-Reference'].set_active(False)
@@ -973,6 +965,7 @@ class Controller:
                 one_pass = False
             if tmpv:
                 self.scenedetect_start(one_pass)
+            self.view['subtitles'].queue_draw()
 
     def scenedetect_start(self, _one_pass):
         self.scenedetect = cSceneDetect(self.model.video.videoFilename, one_pass = _one_pass)
@@ -1001,7 +994,6 @@ class Controller:
         return True
 
     def open_srt(self, filename):
-        #if not exists(filename.decode('utf-8')):
         if not cfile(filename).exists:
             return
         self.model.subFilename = filename
@@ -1017,7 +1009,6 @@ class Controller:
             self.autosaveHandle = GObject.timeout_add_seconds(60, self.autosave)
 
     def open_vo(self, filename):
-        #if not exists(filename.decode('utf-8')) or filename == '':
         if not cfile(filename).exists or filename == '':
             return
         self.model.voFilename = filename
@@ -1027,7 +1018,6 @@ class Controller:
         self.model.voReference.filename = filename
 
     def open_pkf(self, filename):
-        #if not exists(filename.decode('utf-8')):
         if not cfile(filename).exists:
             wgDialog = cWaveformGenerationDialog(self.view, self.model.video.videoFilename, self.model.peakFilename)
             wgDialog.run()
@@ -1035,7 +1025,6 @@ class Controller:
         self.on_update_audio_duration(None, self.model.audioDuration)
 
     def on_project_settings_clicked(self, sender):
-        #if not exists(self.model.projectFilename.decode('utf-8')):
         if not cfile(self.model.projectFilename).exists:
             return
         projectData = pickle.load(open(self.model.projectFilename.decode('utf-8'), 'rb'))
@@ -1053,23 +1042,17 @@ class Controller:
         dialog.destroy()
         if resData is None:
             return
-        #refpath = split(projectData['projectFile'])[0]
         refpath = cfile(projectData['projectFile']).abspath
 
         if resData['voFile'] != projectData['voFile']:
-            #projectData['voFile'] = get_rel_path(refpath, resData['voFile']) if resData['voFile'] != '' else ''
             projectData['voFile'] = cfile(resData['voFile'], refpath = refpath).relfull
             pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
             self.open_vo(resData['voFile'])
         if resData['subFile'] != projectData['subFile']:
-            #projectData['subFile'] = get_rel_path(refpath, resData['subFile'])
             projectData['subFile'] = cfile(resData['subFile'], refpath = refpath).relfull
-            #projectData['voFile'] = get_rel_path(refpath, resData['voFile']) if resData['voFile'] != '' else ''
             projectData['voFile'] = cfile(resData['voFile'], refpath = refpath).relfull
             pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
-            #self.open_srt(normpath(join(refpath, resData['subFile'])))
             self.open_srt( cfile(resData['subFile'], refpath = refpath).full_path )
-            #self.open_vo(normpath(join(refpath, resData['voFile'])) if resData['voFile'] != '' else '' )
             self.open_vo( cfile(resData['voFile'], refpath = refpath).full_path )
             self.view['audio'].queue_draw()
 
@@ -1079,20 +1062,14 @@ class Controller:
         self.preferences.save()
 
         self.model.projectFilename = filename
-        #refpath = split(filename)[0]
         refpath = cfile(filename).abspath
 
         projectData = pickle.load(open(filename.decode('utf-8'), 'rb'))
-        #self.model.video.set_video_filename(normpath(join(refpath, projectData['videoFile'])))
         self.model.video.set_video_filename( cfile(projectData['videoFile'], refpath = refpath).full_path )
-        #self.model.peakFilename = normpath(join(refpath, projectData['peakFile']))
         self.model.peakFilename = cfile(projectData['peakFile'], refpath = refpath).full_path
-        #self.model.subFilename = normpath(join(refpath, projectData['subFile']))
         self.model.subFilename = cfile(projectData['subFile'], refpath = refpath).full_path
-        #self.model.voFilename = normpath(join(refpath, projectData['voFile'])) if projectData['voFile'] != '' else ''
         self.model.voFilename = cfile(projectData['voFile'], refpath = refpath).full_path
 
-        #self.view.set_title(splitext(split(projectData['videoFile'])[1])[0] + ' - ' + self.view.prog_title)
         self.view.set_title( cfile(projectData['videoFile']).base + ' - ' + self.view.prog_title )
 
         self.open_pkf(self.model.peakFilename)
@@ -1113,7 +1090,6 @@ class Controller:
 
     def on_OCM_select(self, sender, result):
         sender.disconnect(sender.handler_select)
-        #if exists(result.decode('utf-8')):
         if cfile(result).exists:
             self.open_project(result)
 
@@ -1140,8 +1116,7 @@ class Controller:
         self.history.add(('delete', self.tvSelectionList[:]))
         self.view['audio'].activeSub = None
         with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
-            for sub in self.tvSelectionList:
-                self.model.subtitles.remove_sub(sub)
+            do_all(self.model.subtitles.remove_sub, self.tvSelectionList)
         treeselection = self.view['subtitles'].get_selection()
         treeselection.unselect_all()
         self.view['audio'].queue_draw()
@@ -1155,8 +1130,7 @@ class Controller:
         treeselection = self.view['subtitles'].get_selection()
         treeselection.unselect_all()
         with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
-            for sub in self.tvSelectionList:
-                self.model.subtitles.remove_sub(sub)
+            do_all(self.model.subtitles.remove_sub, self.tvSelectionList)
         self.history.add(('merge', self.tvSelectionList[:], merged))
         self.tvSelectionList = []
         merged.vo = '\n'.join(line[2].strip() for line in self.model.voReference.get_subs_in_range(merged.startTime, merged.stopTime))
@@ -1392,22 +1366,14 @@ class Controller:
             base = tmp.base
             ext = tmp.ext
             for i in xrange(9, 0, -1):
-                #if exists(srtFilename + '.' + str(i+1)):
                 if cfile('%s-%s.%s' % (base, str(i+1), ext)).exists:
-                    #remove(srtFilename + '.' + str(i+1))
                     cfile('%s-%s.%s' % (base, str(i+1), ext)).delete()
-                #if exists(srtFilename + '.' + str(i)):
                 if cfile('%s-%s.%s' % (base, str(i), ext)).exists:
-                    #rename(srtFilename + '.' + str(i),  srtFilename + '.' + str(i+1))
                     cfile('%s-%s.%s' % (base, str(i), ext)).rename('%s-%s.%s' % (base, str(i+1), ext))
-            #if exists(srtFilename + '.1'):
             if cfile('%s-1.%s' % (base, ext)).exists:
-                #remove(srtFilename,  srtFilename + '.1')
                 cfile('%s-1.%s' % (base, ext)).delete()
-            #if exists(srtFilename):
             if cfile(base + '.' + ext).exists:
                 cfile(base + '.' + ext).rename(base + '-1.' + ext)
-                #rename(srtFilename,  srtFilename + '.1')
         srtFile(self.model.subFilename).write_to_file(self.model.subtitles.get_sub_list(), encoding = self.preferences['Encoding'])
         self.save_subs_info()
         self.model.subtitles.clear_changed()
@@ -1541,18 +1507,16 @@ class Controller:
     def has_video_duration(self):
         return self.videoDuration != 0
 
-#    def check_video_file_compatibility(self, filename):
-#        if platform.system() != 'Windows':
-#            return filename
-#        media_info = cMediaInfo(filename)
-#        media_info.run()
-#        new_filename = splitext(filename)[0] + '-fixed.mkv'
-#        if media_info.packed:
-#            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -fflags +genpts -i "SOURCEFILE" -c:a aac -b:a 128k -ar 22050 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Generating a fixed b-frame video')
-#            recodeDialog.run()
-#            return new_filename if recodeDialog.result else ''
-#        elif media_info.audio_codec != 'A_AAC':
-#            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE"  -c:a aac -b:a 128k -ar 22050 -ac 1 -strict -2 -c:v copy "DESTFILE"', 'Converting to compatible audio codec (aac)')
-#            recodeDialog.run()
-#            return new_filename if recodeDialog.result else ''
-#        return filename
+    def check_video_file_compatibility(self, filename):
+        if platform.system() != 'Windows':
+            return filename
+        media_info = cMediaInfo(filename)
+        media_info.run()
+        tmp = cfile(filename)
+        tmp.change_base(tmp.base + '-fixed')
+        new_filename = tmp.full_path
+        if media_info.audio_codec != 'A_AAC':
+            recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE" -c:v copy -c:a pcm_s16le "DESTFILE"', 'Fixing incompatible audio.')
+            recodeDialog.run()
+            return new_filename if recodeDialog.result else ''
+        return filename

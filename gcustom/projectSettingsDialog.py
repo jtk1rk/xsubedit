@@ -14,7 +14,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
         else:
             self.use_vo = (project['voFile'] != '')
 
-        hbox1 = Gtk.HBox(spacing=4)
+        hbox1 = Gtk.HBox(spacing = 4)
         self.videoButton = Gtk.Button()
         self.videoButton.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON))
         self.project_video_entry = Gtk.Entry()
@@ -23,7 +23,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
         hbox1.pack_end(self.videoButton, False, False, 0)
         hbox1.pack_end(self.project_video_entry, False, True, 0)
 
-        hbox2 = Gtk.HBox(spacing=4)
+        hbox2 = Gtk.HBox(spacing = 4)
         self.projectButton = Gtk.Button()
         self.projectButton.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON))
         self.project_filename_entry = Gtk.Entry()
@@ -32,7 +32,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
         hbox2.pack_end(self.projectButton, False, False, 0)
         hbox2.pack_end(self.project_filename_entry, False, True, 0)
 
-        hbox3 = Gtk.HBox(spacing=4)
+        hbox3 = Gtk.HBox(spacing = 4)
         self.subtitleButton = Gtk.Button()
         self.subtitleButton.set_image(Gtk.Image.new_from_stock(Gtk.STOCK_ADD, Gtk.IconSize.BUTTON))
         self.project_sub_filename_entry = Gtk.Entry()
@@ -63,9 +63,11 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.radioButton_load_sub = Gtk.RadioButton(label = 'Load Subtitle Lines')
         self.radioButton_empty_sub = Gtk.RadioButton(group = self.radioButton_load_sub, label = 'Create Empty Subtitle')
         self.radioButton_sub_lines_no_text = Gtk.RadioButton(group = self.radioButton_load_sub, label = 'Load Lines without text (only timestamps)')
+        self.radioButton_fill_with_vo_text = Gtk.RadioButton(group = self.radioButton_load_sub, label = 'Fill sub text with vo text')
         hbox5.pack_start(self.radioButton_load_sub, False, False, 0)
         hbox5.pack_start(self.radioButton_empty_sub, False, False, 0)
         hbox5.pack_start(self.radioButton_sub_lines_no_text, False, False, 0)
+        hbox5.pack_start(self.radioButton_fill_with_vo_text, False, False, 0)
         frameBox.add(hbox5)
 
         self.vbox.pack_start(hbox1, False, False, 0)
@@ -86,9 +88,10 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.projectButton.connect('clicked', self.on_projectButton_clicked)
         self.subtitleButton.connect('clicked', self.on_subtitleButton_clicked)
         self.voButton.connect('clicked', self.on_voButton_clicked)
-        self.radioButton_load_sub.connect('toggled', self.on_radio_toggle, 'op1')
-        self.radioButton_empty_sub.connect('toggled', self.on_radio_toggle, 'op2')
-        self.radioButton_sub_lines_no_text.connect('toggled', self.on_radio_toggle, 'op3')
+        self.radioButton_load_sub.connect('toggled', self.on_radio_toggle, 'Normal')
+        self.radioButton_empty_sub.connect('toggled', self.on_radio_toggle, 'Empty')
+        self.radioButton_sub_lines_no_text.connect('toggled', self.on_radio_toggle, 'Timestamps')
+        self.radioButton_fill_with_vo_text.connect('toggled', self.on_radio_toggle, 'Fill_VO')
 
         self.project = project.copy()
         self.project['subPolicy'] = 'Normal'
@@ -97,12 +100,7 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.on_vo_toggled(voCheckButton)
 
     def on_radio_toggle(self, sender, option):
-        if option == 'op1':
-            self.project['subPolicy'] = 'Normal'
-        elif option == 'op2':
-            self.project['subPolicy'] = 'Timestamps'
-        elif option == 'op3':
-            self.project['subPolicy'] = 'Empty'
+        self.project['subPolicy'] = option
 
     def on_vo_toggled(self, widget):
         self.use_vo = widget.get_active()

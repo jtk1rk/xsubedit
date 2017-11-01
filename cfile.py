@@ -16,11 +16,19 @@ def get_rel_path(refpath, filename):
 
 class cfile:
 
-    def __init__(self, filename, refpath = ''):
-        self._full_path = filename.decode('utf-8')
-        self._path, self._filename = split(self._full_path)
-        self._base, self._ext = splitext(self._filename)
-        self._ref_path = normpath(refpath.decode('utf-8'))
+    def __init__(self, _file, refpath = ''):
+        if isinstance(_file, cfile):
+            self._full_path = _file._full_path
+            self._path = _file._path
+            self._filename = _file._filename
+            self._base = _file._base
+            self._ext = _file._ext
+            self._ref_path = _file._ref_path
+        else:
+            self._full_path = _file.decode('utf-8')
+            self._path, self._filename = split(self._full_path)
+            self._base, self._ext = splitext(self._filename)
+            self._ref_path = normpath(refpath.decode('utf-8'))
 
     # Path and name properties
 
@@ -68,6 +76,8 @@ class cfile:
 
     @property
     def exists(self):
+        if self.filename == '':
+            return False
         return fileExists(self.full_path)
 
     @property
@@ -80,20 +90,33 @@ class cfile:
 
     # Methods
 
+    def __eq__(self, other):
+        return self.full_path == othjer.full_path
+
+    def obj_copy(self):
+        return cfile(self._full_path, refpath = self._ref_path)
+
     def rename(self, newName):
-        os.rename(self.full_path, join(self.path, newName))
+        rename(self.full_path, join(self.path, newName))
 
     def delete(self):
-        os.remove(self.full_path)
+        remove(self.full_path)
 
     def copy(self, newFile):
-        copyfile(self.full_path, newFile)
+        if isinstance(newFile, cfile):
+            copyfile(self.full_path, newFile.full_path)
+        else:
+            copyfile(self.full_path, newFile)
 
     def read_data(self):
         # Usually virtual
         with open(self.full_path, 'r') as f:
             res = f.read()
         return res
+
+    def touch(self):
+        f = open(self.full_path, 'w')
+        f.close()
 
     def write_data(self, data):
         # virtual
