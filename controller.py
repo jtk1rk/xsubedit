@@ -25,6 +25,7 @@ from gcustom.visualSyncDialog import cSyncAudioWidget
 from gcustom.autoSyncOtherVersionDialog import cAutoSyncOtherVersionDialog
 
 from thesaurus import cThesaurus
+from cmediainfo import cMediaInfo
 from subfile import srtFile, gen_timestamp_srt_from_source
 from os import makedirs, errno
 from os.path import join
