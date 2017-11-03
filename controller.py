@@ -23,6 +23,7 @@ from gcustom.syncDialog import cSyncDialog
 from gcustom.selectionListDialog import cSelectionListDialog
 from gcustom.visualSyncDialog import cSyncAudioWidget
 from gcustom.autoSyncOtherVersionDialog import cAutoSyncOtherVersionDialog
+from gcustom.cVideoWindow import cVideoWindow
 
 from thesaurus import cThesaurus
 from cmediainfo import cMediaInfo
@@ -145,6 +146,7 @@ class Controller:
         view['VCM-TwoPassSD'].connect('activate', self.on_VCM, 'VCM-TwoPassSD')
         view['VCM-SceneDetect'].connect('activate', self.on_VCM, 'VCM-SceneDetect')
         view['VCM-StopDetection'].connect('activate', self.on_VCM, 'VCM-StopDetection')
+        view['VCM-Detach'].connect('activate', self.on_VCM, 'VCM-Detach')
         view['splitSubsTB'].connect('clicked', self.on_TB_split)
         view['autoSyncOtherVersionTB'].connect('clicked', self.on_autoSyncOtherVersion_clicked)
 
@@ -329,6 +331,21 @@ class Controller:
         elif option == 'VCM-StopDetection' and hasattr(self, 'scenedetect'):
             self.scenedetect.stop()
             self.view['progress-bar'].set_visible(False)
+        elif option == 'VCM-Detach':
+            videoWindow = cVideoWindow(self.view, self)
+            self.set_video_widget(videoWindow)
+            self.view['video'].hide()
+            videoWindow.destroy_handler = videoWindow.connect('destroy', self.on_video_window_destroy)
+            videoWindow.backup_audio_view_size = self.view.audioViewSize
+            self.view.audioViewSize = 1
+            self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+
+    def on_video_window_destroy(self, widget):
+        widget.disconnect(widget.destroy_handler)
+        self.view['video'].show()
+        self.set_video_widget(self.view['video'].DrawingArea)
+        self.view.audioViewSize = widget.backup_audio_view_size
+        self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()
@@ -411,7 +428,7 @@ class Controller:
         if not self.has_audio_duration():
             return
         dialog = Gtk.FileChooserDialog('Import SRT', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
-        dialog.set_current_folder(split(self.model.subFilename)[0])
+        dialog.set_current_folder(cfile(self.model.subFilename).abspath)
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('SRT File')
@@ -533,11 +550,11 @@ class Controller:
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
 
-    def set_video_widget(self):
-        if self.videoWidgetIsSet :
+    def set_video_widget(self, _widget = None):
+        if self.videoWidgetIsSet and _widget is None :
             return
         self.videoWidgetIsSet = True
-        widget = self.view['video'].DrawingArea
+        widget = self.view['video'].DrawingArea if _widget is None else _widget
         video = widget.get_property('window')
         if platform.system() == 'Windows':
             if not video.ensure_native():
@@ -796,8 +813,11 @@ class Controller:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
+            print "a"
             if not self.has_audio_duration():
+                print "b"
                 return
+            print "c"
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
@@ -1515,6 +1535,7 @@ class Controller:
         media_info.run()
         tmp = cfile(filename)
         tmp.change_base(tmp.base + '-fixed')
+        tmp.change_ext('.mkv')
         new_filename = tmp.full_path
         if media_info.audio_codec != 'A_AAC':
             recodeDialog = cRecodeDialog(self.view, filename, new_filename, 'ffmpeg -y -i "SOURCEFILE" -c:v copy -c:a pcm_s16le "DESTFILE"', 'Fixing incompatible audio.')

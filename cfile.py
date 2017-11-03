@@ -40,7 +40,7 @@ class cfile:
 
     @property
     def ext(self):
-        return self._ext
+        return self._ext.replace('.','')
 
     @property
     def base(self):
@@ -48,7 +48,9 @@ class cfile:
 
     @property
     def filename(self):
-        return self.base + self.ext
+        if self.base == '':
+            return ''
+        return '%s.%s' % (self.base, self.ext)
 
     @property
     def full_path(self):
@@ -123,7 +125,7 @@ class cfile:
         pass
 
     def change_ext(self, newExt):
-        self._ext = newExt
+        self._ext = newExt.replace('.','')
 
     def change_base(self, newBase):
         self._base = newBase

@@ -202,14 +202,17 @@ class View(Gtk.Window):
         self.widgets['VCM-StopDetection'] = Gtk.MenuItem('Stop Detection')
         self.widgets['VCM-TwoPassSD'] = Gtk.CheckMenuItem('Two-pass Detection (faster)')
         self.widgets['VCM-TwoPassSD'].set_active(True)
+        self.widgets['VCM-Detach'] = Gtk.MenuItem('Detach Video')
 
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-SceneDetect'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-StopDetection'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-TwoPassSD'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Detach'])
 
         self.widgets['VCM-SceneDetect'].show()
         self.widgets['VCM-StopDetection'].hide()
         self.widgets['VCM-TwoPassSD'].show()
+        self.widgets['VCM-Detach'].show()
 
         # Containers
         self.widgets['root-paned-container'] = Gtk.Paned(orientation = Gtk.Orientation.VERTICAL)
