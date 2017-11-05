@@ -3,7 +3,7 @@ from numpy import array, argmin, argmax
 from scipy import signal
 import numpy as np
 from math import floor, ceil
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from subutils import ms2ts
 from collections import deque
 from random import random
@@ -73,14 +73,14 @@ def gen_match_array(slc, spec, doffset, break_limit):
 
     if __name__ == '__main__' and stat_test(res):
         res = array(res)
-        plt.plot(res)
-        plt.plot([res.mean()] * len(res))
-        plt.plot(np.gradient(res))
+#        plt.plot(res)
+#        plt.plot([res.mean()] * len(res))
+#        plt.plot(np.gradient(res))
         grad = np.gradient(res)
         gmin_idx = argmin(grad)
         gmax_idx = argmax(grad)
         print abs(grad[gmin_idx] - grad[gmax_idx]), grad.mean(), grad.std()
-        plt.show()
+#        plt.show()
 
     res = array(res)
     grad = np.gradient(res)
