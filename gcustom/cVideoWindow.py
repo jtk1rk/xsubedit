@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GObject
 
 class cMouseHandler(object):
     def __init__(self):
@@ -33,13 +33,23 @@ class cMouseHandler(object):
             self.y = event.y
 
 class cVideoWindow(Gtk.Window):
-    def __init__(self, parent, controller):
+    __gsignals__ = { 'update-pos': (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)),  # (int, int)
+                     'update-size' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)) # (int, int)
+                     }
+
+    def __init__(self, parent, win_size = None, win_position = None):
         super(cVideoWindow, self).__init__()
         self.parent = parent
-        self.set_keep_above(True)
+        self.set_transient_for(parent)
         self.set_size_request(200, 100)
-        self.resize(480, 240)
+        if not ( win_size is None ):
+            self.resize(*win_size)
+        else:
+            self.resize(480, 240)
         self.set_decorated(False)
+        if not ( win_position is None ):
+            self.move(*win_position)
+
         self.mouse = cMouseHandler()
 
         self.DrawingArea = Gtk.DrawingArea()
@@ -47,12 +57,11 @@ class cVideoWindow(Gtk.Window):
         EventBox.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
         EventBox.add(self.DrawingArea)
         self.add(EventBox)
-        self.controller = controller
         self.VCM = Gtk.Menu()
         VCM_Close = Gtk.MenuItem('Close')
         self.VCM_Lock = Gtk.CheckMenuItem('Lock')
-        self.VCM.add(VCM_Close)
         self.VCM.add(self.VCM_Lock)
+        self.VCM.add(VCM_Close)
         self.VCM.show_all()
         self.override_background_color(0, Gdk.RGBA(0,0,0,1))
 
@@ -68,6 +77,8 @@ class cVideoWindow(Gtk.Window):
         self.cursorCorner = Gdk.Cursor(Gdk.CursorType.BOTTOM_RIGHT_CORNER)
         self.cusrorDefault = self.get_window().get_cursor()
         self.resizing = False
+        self.moving = False
+        self.close_request = False
 
     def update_cursor(self, current_cursor, new_cursor):
         if new_cursor != current_cursor:
@@ -105,16 +116,18 @@ class cVideoWindow(Gtk.Window):
             return
 
         # Check if resizing
-        if self.mouse.click_at_corner:
-            self.update_size(x = event.x_root, y = event.y_root)
-        elif self.mouse.click_at_bottom_margin:
-            self.update_size(y = event.y_root)
-        elif self.mouse.click_at_right_margin:
-            self.update_size(x = event.x_root)
+        if not self.moving:
+            if self.mouse.click_at_corner:
+                self.update_size(x = event.x_root, y = event.y_root)
+            elif self.mouse.click_at_bottom_margin:
+                self.update_size(y = event.y_root)
+            elif self.mouse.click_at_right_margin:
+                self.update_size(x = event.x_root)
 
         # if not resizing, move the window
         if not self.resizing:
             self.move(event.x_root - self.mouse.orig_x, event.y_root - self.mouse.orig_y)
+            self.moving = True
 
     def on_key_release(self, sender, event):
         self.controller.on_key_release(sender, event)
@@ -128,7 +141,17 @@ class cVideoWindow(Gtk.Window):
 
     def on_drawingarea_button_release(self, sender, event):
         self.mouse.update_event('release', event)
-        self.resizing = False
+        if self.resizing:
+            allocation = self.get_allocation()
+            height = allocation.height
+            width = allocation.width
+            self.emit('update-size', (width, height))
+            self.resizing = False
+        if self.moving:
+            allocation = self.get_allocation()
+            origin = self.get_window().get_root_origin()
+            self.emit('update-pos', (origin.x, origin.y))
+            self.moving = False
         self.mouse.click_at_right_margin = False
         self.mouse.click_at_bottom_margin = False
         self.mouse.click_at_corner = False
@@ -136,4 +159,5 @@ class cVideoWindow(Gtk.Window):
             self.VCM.popup(None, None, None, None, event.button, event.time)
 
     def on_close_window(self, sender):
+        self.close_request = True
         self.destroy()

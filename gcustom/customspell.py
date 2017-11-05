@@ -22,7 +22,7 @@ class Checker:
             return
         self.language = language
         self.spellchecker = enchant.Dict(language)
-    
+
     def get_language_list(self):
         return enchant.list_languages()
 
@@ -46,7 +46,7 @@ class Checker:
         if not (hasattr(self.text_view, 'last_mouse_x') and hasattr(self.text_view, 'last_mouse_y')) or self.spellchecker is None:
             return
         itr = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)
-        if type(itr) is tuple:
+        if not isinstance(itr, Gtk.TreeIter):
             itr = itr[1]
         p1 = itr.copy()
         p2 = itr.copy()

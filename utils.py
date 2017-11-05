@@ -15,6 +15,15 @@ UTF8_BOM = '\xef\xbb\xbf'
 
 iround = lambda x: int(round(x))
 
+def common_part(str1, str2):
+    res = ''
+    minstr = srt1 if len(str1) < len(str2) else str2
+    for i in xrange(len(minstr)):
+        if str1[i] != str2[i]:
+            break
+        res += minstr[i]
+    return res
+
 class StretchableList(list):
     def stretch(self, newlen):
         old = [ (i * (newlen-1), self[i]) for i in range(len(self)) ]

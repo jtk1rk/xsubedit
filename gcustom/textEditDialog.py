@@ -223,7 +223,7 @@ class cTextEditDialog(Gtk.Dialog):
             popup.show_all()
         # Add Synonyms Menu
         itr = self.text_view.get_iter_at_location(self.text_view.last_mouse_x, self.text_view.last_mouse_y)
-        if type(itr) is tuple:
+        if not isinstance(itr, Gtk.TreeIter):
             itr = itr[1]
         p1 = itr.copy()
         p2 = itr.copy()

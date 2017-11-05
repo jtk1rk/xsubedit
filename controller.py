@@ -24,6 +24,7 @@ from gcustom.selectionListDialog import cSelectionListDialog
 from gcustom.visualSyncDialog import cSyncAudioWidget
 from gcustom.autoSyncOtherVersionDialog import cAutoSyncOtherVersionDialog
 from gcustom.cVideoWindow import cVideoWindow
+from gcustom.cMergeSplitDialog import cMergeSplitDialog
 
 from thesaurus import cThesaurus
 from cmediainfo import cMediaInfo
@@ -131,6 +132,7 @@ class Controller:
         view['newFileTB'].connect('clicked', self.on_new_button_clicked)
         view['saveFileTB'].connect('clicked', self.on_save_button_clicked)
         view['checkTB'].connect('clicked', self.on_TB_check_clicked)
+        view['MergeSplitTB'].connect('clicked', self.on_TB_MergeSplit_clicked)
         view['visualSyncTB'].connect('clicked', self.on_TB_visual_sync)
         view['importSRTTB'].connect('clicked', self.on_TB_import_srt)
         view['subtitles'].connect('key-release-event', self.on_key_release)
@@ -139,7 +141,6 @@ class Controller:
         view['undoTB'].connect('clicked', self.on_undo_clicked)
         view['redoTB'].connect('clicked', self.on_redo_clicked)
         view['preferencesTB'].connect('clicked', self.preferences_clicked)
-        view['projectSettingsTB'].connect('clicked', self.on_project_settings_clicked)
         view['audio'].connect('viewpos-update', self.on_audio_pos)
         view['video'].connect('button-release-event', self.on_video_clicked)
         self.history.connect('history-update',  self.on_history_update)
@@ -239,9 +240,12 @@ class Controller:
         # Show Main Window
         view.show_all()
         view['subtitles'].grab_focus()
-        view['projectSettingsTB'].set_property('sensitive', False)
         view['splitSubsTB'].set_property('sensitive', False)
+        view['importSRTTB'].set_property('sensitive', False)
+        view['checkTB'].set_property('sensitive', False)
+        view['visualSyncTB'].set_property('sensitive', False)
         view['autoSyncOtherVersionTB'].set_property('sensitive', False)
+        view['saveFileTB'].set_property('sensitive', False)
 
         # Final initializations
         self.preferences.load()
@@ -258,6 +262,12 @@ class Controller:
         self.view['audio'].scenes = self.model.scenes
         self.view['progress-bar'].set_visible(False)
 
+        if 'Maximized' in self.preferences and self.preferences['Maximized']:
+            self.view.maximize()
+
+        if 'Video-Detached' in self.preferences and self.preferences['Video-Detached']:
+            self.on_VCM(None, 'VCM-Detach')
+
         try:
             self.scene_detection_twopass = self.preferences['SceneDetect']['TwoPass']
         except:
@@ -266,6 +276,9 @@ class Controller:
         self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
 
         self.init_done = True
+
+    def on_TB_MergeSplit_clicked(self, sender):
+        cMergeSplitDialog(self.view)
 
     def on_TB_split(self, sender):
         cSplitSrtDialog(self.view, self.model.subFilename, self.model.subtitles.get_sub_list())
@@ -332,20 +345,40 @@ class Controller:
             self.scenedetect.stop()
             self.view['progress-bar'].set_visible(False)
         elif option == 'VCM-Detach':
-            videoWindow = cVideoWindow(self.view, self)
+            sz = None
+            pos = None
+            if 'Video-Size' in self.preferences:
+                sz = self.preferences['Video-Size']
+            if 'Video-Position' in self.preferences:
+                pos = self.preferences['Video-Position']
+
+            videoWindow = cVideoWindow(self.view, win_size = sz, win_position = pos)
             self.set_video_widget(videoWindow)
             self.view['video'].hide()
-            videoWindow.destroy_handler = videoWindow.connect('destroy', self.on_video_window_destroy)
+            videoWindow.handler_destroy = videoWindow.connect('destroy', self.on_video_window_destroy)
+            videoWindow.handler_update_pos = videoWindow.connect('update-pos', self.on_video_window_update_pos)
+            videoWindow.handler_update_size = videoWindow.connect('update-size', self.on_video_window_update_size)
             videoWindow.backup_audio_view_size = self.view.audioViewSize
             self.view.audioViewSize = 1
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+            self.preferences['Video-Detached'] = True
+
+    def on_video_window_update_size(self, widget, value):
+        self.preferences['Video-Size'] = value
+
+    def on_video_window_update_pos(self, widget, value):
+        self.preferences['Video-Position'] = value
 
     def on_video_window_destroy(self, widget):
-        widget.disconnect(widget.destroy_handler)
+        widget.disconnect(widget.handler_destroy)
+        widget.disconnect(widget.handler_update_size)
+        widget.disconnect(widget.handler_update_pos)
         self.view['video'].show()
         self.set_video_widget(self.view['video'].DrawingArea)
         self.view.audioViewSize = widget.backup_audio_view_size
         self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+        if widget.close_request:
+            self.preferences['Video-Detached'] = False
 
     def on_HCM_toggled(self, widget, column):
         column.props.visible = widget.get_active()
@@ -445,9 +478,8 @@ class Controller:
             return
 
         subList = srtFile(filename).read_from_file()
-        for item in subList:
-            self.model.subtitles.append(item)
-
+        do_all(self.model.subtitles.append, subList)
+        self.model.subtitles.load_vo_data(self.model.voReference)
         self.view['audio'].queue_draw()
 
     def save_subs_info(self):
@@ -609,6 +641,9 @@ class Controller:
 
         if hasattr(self, 'scenedetect'):
             self.scenedetect.stop()
+
+        self.preferences['Maximized'] = self.view.props.is_maximized
+        self.preferences.save()
 
         Gtk.main_quit()
 
@@ -813,11 +848,8 @@ class Controller:
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
         elif event.keyval == Gdk.KEY_F1:
-            print "a"
             if not self.has_audio_duration():
-                print "b"
                 return
-            print "c"
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
             self.model.video.play()
@@ -905,7 +937,6 @@ class Controller:
 
             orig_video = cfile(projectFiles['videoFile'], refpath = refpath).full_path
             tmpstr = self.check_video_file_compatibility( cfile(projectFiles['videoFile'], refpath = refpath).full_path )
-            #projectFiles['videoFile'] =  cfile(tmpstr, refpath = refpath).relfull
             projectFiles['videoFile'] = tmpstr
             pickle.dump(projectFiles, open(projectFiles['projectFile'].decode('utf-8'), 'wb'))
 
@@ -1045,38 +1076,6 @@ class Controller:
         self.model.get_waveform()
         self.on_update_audio_duration(None, self.model.audioDuration)
 
-    def on_project_settings_clicked(self, sender):
-        if not cfile(self.model.projectFilename).exists:
-            return
-        projectData = pickle.load(open(self.model.projectFilename.decode('utf-8'), 'rb'))
-        dialog = cProjectSettingsDialog(self.view, projectData)
-        dialog.project_filename_entry.set_property('sensitive', False)
-        dialog.projectButton.set_property('sensitive', False)
-        dialog.videoButton.set_property('sensitive',  False)
-        dialog.project_video_entry.set_property('sensitive', False)
-        res = dialog.run()
-        resData = None
-        if res == Gtk.ResponseType.OK:
-            resData = dialog.project.copy()
-            if not( dialog.use_vo ):
-                resData['voFile'] = ''
-        dialog.destroy()
-        if resData is None:
-            return
-        refpath = cfile(projectData['projectFile']).abspath
-
-        if resData['voFile'] != projectData['voFile']:
-            projectData['voFile'] = cfile(resData['voFile'], refpath = refpath).relfull
-            pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
-            self.open_vo(resData['voFile'])
-        if resData['subFile'] != projectData['subFile']:
-            projectData['subFile'] = cfile(resData['subFile'], refpath = refpath).relfull
-            projectData['voFile'] = cfile(resData['voFile'], refpath = refpath).relfull
-            pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
-            self.open_srt( cfile(resData['subFile'], refpath = refpath).full_path )
-            self.open_vo( cfile(resData['voFile'], refpath = refpath).full_path )
-            self.view['audio'].queue_draw()
-
     def open_project(self, filename):
         self.set_video_widget()
         self.preferences.update_mru(filename)
@@ -1099,7 +1098,6 @@ class Controller:
         self.load_subs_info()
         self.model.subtitles.clear_changed()
         self.check_modified()
-        self.view['projectSettingsTB'].set_property('sensitive', True)
 
         if projectData['voFile'] == '':
             referenceCol = self.view['subtitles'].get_columns()[4]
@@ -1107,7 +1105,11 @@ class Controller:
             self.view['HCM-Reference'].set_active(False)
 
         self.view['splitSubsTB'].set_sensitive(True)
+        self.view['importSRTTB'].set_sensitive(True)
+        self.view['checkTB'].set_sensitive(True)
+        self.view['visualSyncTB'].set_sensitive(True)
         self.view['autoSyncOtherVersionTB'].set_sensitive(True)
+        self.view['saveFileTB'].set_sensitive(True)
 
     def on_OCM_select(self, sender, result):
         sender.disconnect(sender.handler_select)
@@ -1416,7 +1418,8 @@ class Controller:
             self.resizeEventCounter = 2
         if (hasattr(self, 'init_done') and self.init_done) and (not ('subViewSize' in self.preferences and 'audioViewSize' in self.preferences) or not (self.preferences['subViewSize'] == self.view.subtitlesViewSize and self.preferences['audioViewSize'] == self.view.audioViewSize)):
             self.preferences['subViewSize'] = self.view.subtitlesViewSize
-            self.preferences['audioViewSize'] = self.view.audioViewSize
+            if self.view['video'].props.visible:
+                self.preferences['audioViewSize'] = self.view.audioViewSize
             self.preferences.save()
 
     def on_video_finish(self, bus, message):

@@ -3,10 +3,11 @@ from numpy import array, argmin, argmax
 from scipy import signal
 import numpy as np
 from math import floor, ceil
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 from subutils import ms2ts
 from collections import deque
 from random import random
+import pickle
 
 get_random_in_range = lambda a,b: int(a + random() * b)
 iround = lambda v: int(round(v))
@@ -72,14 +73,14 @@ def gen_match_array(slc, spec, doffset, break_limit):
 
     if __name__ == '__main__' and stat_test(res):
         res = array(res)
-        #plt.plot(res)
-        #plt.plot([res.mean()] * len(res))
-        #plt.plot(np.gradient(res))
+        plt.plot(res)
+        plt.plot([res.mean()] * len(res))
+        plt.plot(np.gradient(res))
         grad = np.gradient(res)
         gmin_idx = argmin(grad)
         gmax_idx = argmax(grad)
         print abs(grad[gmin_idx] - grad[gmax_idx]), grad.mean(), grad.std()
-        #plt.show()
+        plt.show()
 
     res = array(res)
     grad = np.gradient(res)
@@ -147,17 +148,22 @@ def normalize_spec(spec):
     spec_data /= spec_data.std()
     return (spec[0], spec[1], spec_data)
 
+def t_slice(arr, startms, stopms):
+    startidx = iround(startms / 8.0)
+    stopidx = iround(stopms / 8.0)
+    return arr[startidx:stopidx]
 
 if __name__ == "__main__":
     from subutils import ts2ms
 
-    src_data = t_normalize(open_data('/home/phantome/tmp/test/src-xsubedit.raw'))
-    dst_data = t_normalize(open_data('/home/phantome/tmp/test/dst-xsubedit.raw'))
-    spec1 = normalize_spec(get_spect(src_data))
-    spec2 = normalize_spec(get_spect(dst_data))
+    src_data = open_data('/home/phantome/tmp2/src-xsubedit.raw')
+    dst_data = open_data('/home/phantome/tmp2/dst-xsubedit.raw')
+    #spec1 = normalize_spec(get_spect(src_data))
+    #spec2 = normalize_spec(get_spect(dst_data))
 
-    print 'calc matching'
-    res = match(spec1, spec2, ts2ms('00:10:20,005'), ts2ms('00:10:22,743'), ts2ms('00:09:00,000'))
+    #print 'calc matching'
+    #res = match(spec1, spec2, ts2ms('00:10:20,005'), ts2ms('00:10:22,743'), ts2ms('00:09:00,000'))
+    print CDM(t_slice(src_data, ts2ms('00:10:20,005'), ts2ms('00:10:22,743')), t_slice(dst_data, ts2ms('00:12:24,372'), ts2ms('00:12:27,110')))
 
-    if not (res is None):
-        print res, ms2ts(int(res[0])), ms2ts(int(res[1]))
+    #if not (res is None):
+    #    print res, ms2ts(int(res[0])), ms2ts(int(res[1]))
