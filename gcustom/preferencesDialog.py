@@ -68,12 +68,6 @@ class cPreferencesDialog(Gtk.Dialog):
 
         self.zoomEntry.set_text(str(self.preferences['Zoom']))
 
-        clearButton = Gtk.Button('Clear Saved Defaults')
-        self.action_area.pack_start(clearButton, False, False, 0)
-        self.action_area.reorder_child(clearButton, 0)
-
-        clearButton.connect('clicked', self.on_clear_clicked)
-
         self.CheckButton_Incremental_Backups.connect('clicked', self.CheckButton_Incremental_Backups_Clicked)
         self.CheckButton_Autosave.connect('clicked', self.CheckButton_Autosave_Clicked)
         self.enc_utf8_bom.connect('clicked', self.enc_utf8_bom_Clicked)
@@ -82,10 +76,6 @@ class cPreferencesDialog(Gtk.Dialog):
 
         self.vbox.show_all()
         self.set_default_response(Gtk.ResponseType.OK)
-
-    def on_clear_clicked(self, widget):
-        remove(self.pref_file)
-        self.destroy()
 
     def on_SD_toggle(self, widget, value):
         if value == 'Auto':

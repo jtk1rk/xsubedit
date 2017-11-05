@@ -254,7 +254,7 @@ class Controller:
         self.autosaveHandle = None
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
         if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
-            self.view.subtitlesViewSize = self.preferences['subViewSize'] if self.preferences['subViewSize'] < 0.99 else 0.99
+            self.view.subtitlesViewSize = self.preferences['subViewSize']
             self.view.audioViewSize = self.preferences['audioViewSize']
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
@@ -358,7 +358,7 @@ class Controller:
             videoWindow.handler_destroy = videoWindow.connect('destroy', self.on_video_window_destroy)
             videoWindow.handler_update_pos = videoWindow.connect('update-pos', self.on_video_window_update_pos)
             videoWindow.handler_update_size = videoWindow.connect('update-size', self.on_video_window_update_size)
-            videoWindow.backup_audio_view_size = self.view.audioViewSize
+            self.preferences['audioViewSize'] = self.view.audioViewSize
             self.view.audioViewSize = 1
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
             self.preferences['Video-Detached'] = True
@@ -375,7 +375,7 @@ class Controller:
         widget.disconnect(widget.handler_update_pos)
         self.view['video'].show()
         self.set_video_widget(self.view['video'].DrawingArea)
-        self.view.audioViewSize = widget.backup_audio_view_size
+        self.view.audioViewSize = self.preferences['audioViewSize']
         self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
         if widget.close_request:
             self.preferences['Video-Detached'] = False
@@ -1418,7 +1418,7 @@ class Controller:
             self.resizeEventCounter = 2
         if (hasattr(self, 'init_done') and self.init_done) and (not ('subViewSize' in self.preferences and 'audioViewSize' in self.preferences) or not (self.preferences['subViewSize'] == self.view.subtitlesViewSize and self.preferences['audioViewSize'] == self.view.audioViewSize)):
             self.preferences['subViewSize'] = self.view.subtitlesViewSize
-            if self.view['video'].props.visible:
+            if not self.preferences['Video-Detached']:
                 self.preferences['audioViewSize'] = self.view.audioViewSize
             self.preferences.save()
 
