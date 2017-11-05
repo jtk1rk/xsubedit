@@ -254,7 +254,7 @@ class Controller:
         self.autosaveHandle = None
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
         if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
-            self.view.subtitlesViewSize = self.preferences['subViewSize']
+            self.view.subtitlesViewSize = self.preferences['subViewSize'] if self.preferences['subViewSize'] < 0.99 else 0.99
             self.view.audioViewSize = self.preferences['audioViewSize']
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
@@ -610,7 +610,7 @@ class Controller:
         self.view['audio'].queue_draw()
 
     def preferences_clicked(self, sender):
-        prefs = cPreferencesDialog(self.view, self.preferences.get_data(), (self.view['audio'].viewportLower, self.view['audio'].viewportUpper))
+        prefs = cPreferencesDialog(self.view, self.preferences.get_data(), (self.view['audio'].viewportLower, self.view['audio'].viewportUpper), self.preferences.filename)
         res = prefs.run()
         if res == Gtk.ResponseType.OK:
             self.preferences.set_data(prefs.preferences)
