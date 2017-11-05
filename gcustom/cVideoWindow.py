@@ -68,7 +68,6 @@ class cVideoWindow(Gtk.Window):
         EventBox.connect('button-release-event', self.on_drawingarea_button_release)
         EventBox.connect('button-press-event', self.on_drawingarea_button_press)
         EventBox.connect('motion-notify-event', self.on_motion_notify)
-        self.connect('key-release-event', self.on_key_release)
         VCM_Close.connect('activate', self.on_close_window)
 
         self.show_all()
@@ -128,9 +127,6 @@ class cVideoWindow(Gtk.Window):
         if not self.resizing:
             self.move(event.x_root - self.mouse.orig_x, event.y_root - self.mouse.orig_y)
             self.moving = True
-
-    def on_key_release(self, sender, event):
-        self.controller.on_key_release(sender, event)
 
     def on_drawingarea_button_press(self, sender, event):
         self.mouse.update_event('press', event)

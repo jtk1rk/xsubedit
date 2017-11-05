@@ -8,6 +8,6 @@ from controller import Controller
 import sys
 
 GObject.threads_init()
-win = Controller(Model(), View('xSubEdit 1.9.9-1'))
+win = Controller(Model(), View('xSubEdit 1.9.9-2'))
 Gtk.main()
 sys.exit(1)

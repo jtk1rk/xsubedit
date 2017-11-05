@@ -358,6 +358,7 @@ class Controller:
             videoWindow.handler_destroy = videoWindow.connect('destroy', self.on_video_window_destroy)
             videoWindow.handler_update_pos = videoWindow.connect('update-pos', self.on_video_window_update_pos)
             videoWindow.handler_update_size = videoWindow.connect('update-size', self.on_video_window_update_size)
+            videoWindow.handler_key_release_event = videoWindow.connect('key-release-event', self.on_key_release)
             self.preferences['audioViewSize'] = self.view.audioViewSize
             self.view.audioViewSize = 1
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
@@ -373,6 +374,7 @@ class Controller:
         widget.disconnect(widget.handler_destroy)
         widget.disconnect(widget.handler_update_size)
         widget.disconnect(widget.handler_update_pos)
+        widget.disconnect(widget.handler_key_release_event)
         self.view['video'].show()
         self.set_video_widget(self.view['video'].DrawingArea)
         self.view.audioViewSize = self.preferences['audioViewSize']
