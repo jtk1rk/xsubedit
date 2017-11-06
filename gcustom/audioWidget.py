@@ -586,14 +586,30 @@ class cAudioWidget(Gtk.EventBox):
         self.emit('viewpos-update', int(low * 100.0 / self.audioDuration))
 
     def center_multiple_active_subs(self, startTime, stopTime):
-        self.videoSegment = (int(startTime), int(stopTime))
-        subWidthPerc = (stopTime - startTime) / float(self.audioDuration)
-        lowPerc = startTime / float(self.audioDuration) - subWidthPerc * 0.8
-        highPerc = stopTime / float(self.audioDuration) + subWidthPerc * 0.8
-        self.viewportLower = lowPerc if lowPerc >= 0 else 0
-        self.viewportUpper = highPerc if highPerc <= 1 else 1
-        self.queue_draw()
-        self.emit('viewpos-update', int(lowPerc * 100))
+        if self.stickZoom:
+            center = (startTime + stopTime) / 2.0
+            center /= float(self.audioDuration)
+            currWidth = ( self.viewportUpper - self.viewportLower )
+            if center - currWidth / 2  < 0:
+                self.viewportLower = 0
+                self.viewportUpper = currWidth
+            elif center + currWidth / 2 > 1:
+                self.viewportLower = 1 - currWidth
+                self.viewportUpper = 1
+            else:
+                self.viewportLower = center - currWidth / 2
+                self.viewportUpper = center + currWidth / 2
+            self.queue_draw()
+            self.emit('viewpos-update', int(self.viewportLower * 100))
+        else:
+            self.videoSegment = (int(startTime), int(stopTime))
+            subWidthPerc = (stopTime - startTime) / float(self.audioDuration)
+            lowPerc = startTime / float(self.audioDuration) - subWidthPerc * 0.8
+            highPerc = stopTime / float(self.audioDuration) + subWidthPerc * 0.8
+            self.viewportLower = lowPerc if lowPerc >= 0 else 0
+            self.viewportUpper = highPerc if highPerc <= 1 else 1
+            self.queue_draw()
+            self.emit('viewpos-update', int(lowPerc * 100))
 
     def draw_buffers(self, widget):
         if not self.isReady:

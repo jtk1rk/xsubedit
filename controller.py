@@ -107,6 +107,8 @@ class Controller:
         view['audio'].connect('right-click', self.on_audio_right_click)
         view['audio'].connect('sub-updated', self.on_audio_sub_updated)
         view['audio'].connect('scroll-event', self.on_audio_mousewheel)
+        view.connect('scroll-event', self.on_mousewheel)
+        view['subtitles'].connect('scroll-event', self.on_mousewheel)
         view['audio'].connect('dragged-sub', self.on_audio_dragged_sub)
         view['audio'].connect('handle-double-click', self.on_audio_handle_double_click)
         view['audio'].connect('vertical-scale-update', self.on_vertical_scale_update)
@@ -239,13 +241,7 @@ class Controller:
 
         # Show Main Window
         view.show_all()
-        view['subtitles'].grab_focus()
-        view['splitSubsTB'].set_property('sensitive', False)
-        view['importSRTTB'].set_property('sensitive', False)
-        view['checkTB'].set_property('sensitive', False)
-        view['visualSyncTB'].set_property('sensitive', False)
-        view['autoSyncOtherVersionTB'].set_property('sensitive', False)
-        view['saveFileTB'].set_property('sensitive', False)
+        self.disable_toolbar_buttons()
 
         # Final initializations
         self.preferences.load()
@@ -255,7 +251,7 @@ class Controller:
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
         if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
             self.view.subtitlesViewSize = self.preferences['subViewSize']
-            self.view.audioViewSize = self.preferences['audioViewSize']
+            self.view.audioViewSize = self.preferences['audioViewSize'] if self.preferences['audioViewSize'] < 0.95 else 0.95
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
 
@@ -275,7 +271,37 @@ class Controller:
 
         self.view['VCM-TwoPassSD'].set_active(self.scene_detection_twopass)
 
+        view.present()
+        view['subtitles'].grab_focus()
         self.init_done = True
+
+    def on_mousewheel(self, widget, event):
+        if widget is self.view['audio']:
+            return False
+        height = self.view['subtitles'].get_allocation().height
+        _, y = self.view['subtitles'].translate_coordinates(self.view, 0, 0)
+        if y < event.y < y + height:
+            vadj = self.view['subtitles'].get_vadjustment()
+            factor = -1 if event.direction == Gdk.ScrollDirection.UP else 1
+            vadj.set_value(vadj.get_value() + factor * vadj.get_step_increment())
+            self.view['subtitles'].set_vadjustment(vadj)
+        return True
+
+    def disable_toolbar_buttons(self):
+        self.view['splitSubsTB'].set_property('sensitive', False)
+        self.view['importSRTTB'].set_property('sensitive', False)
+        self.view['checkTB'].set_property('sensitive', False)
+        self.view['visualSyncTB'].set_property('sensitive', False)
+        self.view['autoSyncOtherVersionTB'].set_property('sensitive', False)
+        self.view['saveFileTB'].set_property('sensitive', False)
+
+    def enable_toolbar_buttons(self):
+        self.view['splitSubsTB'].set_property('sensitive', True)
+        self.view['importSRTTB'].set_property('sensitive', True)
+        self.view['checkTB'].set_property('sensitive', True)
+        self.view['visualSyncTB'].set_property('sensitive', True)
+        self.view['autoSyncOtherVersionTB'].set_property('sensitive', True)
+        self.view['saveFileTB'].set_property('sensitive', True)
 
     def on_TB_MergeSplit_clicked(self, sender):
         cMergeSplitDialog(self.view)
@@ -377,7 +403,7 @@ class Controller:
         widget.disconnect(widget.handler_key_release_event)
         self.view['video'].show()
         self.set_video_widget(self.view['video'].DrawingArea)
-        self.view.audioViewSize = self.preferences['audioViewSize']
+        self.view.audioViewSize = self.preferences['audioViewSize'] if self.preferences['audioViewSize'] < 0.95 else 0.95
         self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
         if widget.close_request:
             self.preferences['Video-Detached'] = False
@@ -579,7 +605,8 @@ class Controller:
         with GObject.signal_handler_block(self.view['audio'], self.active_sub_changed_id):
             self.view['audio'].activeSub = self.model.subtitles.get_sub_from_path(self.view['subtitles'].get_cursor()[0])
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
-            self.view['audio'].center_active_sub()
+            if len(self.tvSelectionList) < 2:
+                self.view['audio'].center_active_sub()
             self.model.video.pause()
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
             self.model.video.set_segment(self.view['audio'].videoSegment)
@@ -1019,6 +1046,8 @@ class Controller:
                 one_pass = False
             if tmpv:
                 self.scenedetect_start(one_pass)
+
+            self.enable_toolbar_buttons()
             self.view['subtitles'].queue_draw()
 
     def scenedetect_start(self, _one_pass):
@@ -1106,12 +1135,7 @@ class Controller:
             referenceCol.props.visible = False
             self.view['HCM-Reference'].set_active(False)
 
-        self.view['splitSubsTB'].set_sensitive(True)
-        self.view['importSRTTB'].set_sensitive(True)
-        self.view['checkTB'].set_sensitive(True)
-        self.view['visualSyncTB'].set_sensitive(True)
-        self.view['autoSyncOtherVersionTB'].set_sensitive(True)
-        self.view['saveFileTB'].set_sensitive(True)
+        self.enable_toolbar_buttons()
 
     def on_OCM_select(self, sender, result):
         sender.disconnect(sender.handler_select)
