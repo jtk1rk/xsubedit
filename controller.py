@@ -280,7 +280,7 @@ class Controller:
             return False
         height = self.view['subtitles'].get_allocation().height
         _, y = self.view['subtitles'].translate_coordinates(self.view, 0, 0)
-        if y < event.y < y + height:
+        if (y < event.y < y + height) or ( widget is self.view['subtitles'] ) :
             vadj = self.view['subtitles'].get_vadjustment()
             factor = -1 if event.direction == Gdk.ScrollDirection.UP else 1
             vadj.set_value(vadj.get_value() + factor * vadj.get_step_increment())
