@@ -161,6 +161,7 @@ class cTextEditDialog(Gtk.Dialog):
         self.text_view.last_mouse_x  = 0
         self.text_view.last_mouse_y = 0
         self.spell.on_buffer_changed(self.text_view.get_buffer())
+        self.text_view.grab_focus()
 
     def on_tv_button_press(self, sender, event):
         self.text_view.last_mouse_x = event.x

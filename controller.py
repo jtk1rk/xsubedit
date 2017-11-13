@@ -250,6 +250,7 @@ class Controller:
             view['audio'].viewportUpper = 1 / self.preferences['Zoom']
         self.autosaveHandle = None
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
+
         if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
             self.view.subtitlesViewSize = self.preferences['subViewSize']
             self.view.audioViewSize = self.preferences['audioViewSize'] if self.preferences['audioViewSize'] < 0.95 else 0.95
@@ -264,6 +265,9 @@ class Controller:
 
         if 'Video-Detached' in self.preferences and self.preferences['Video-Detached']:
             self.on_VCM(None, 'VCM-Detach')
+
+        if 'video-font' in self.preferences:
+            self.model.video.set_sub_font(self.preferences['video-font'])
 
         try:
             self.scene_detection_twopass = self.preferences['SceneDetect']['TwoPass']
@@ -390,7 +394,6 @@ class Controller:
             self.view.audioViewSize = 1
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
             self.preferences['Video-Detached'] = True
-
         elif option == 'VCM-ChangeSubFont':
             dialog = Gtk.FontSelectionDialog('Font Selection', parent = self.view)
             resp = dialog.run()
@@ -399,6 +402,7 @@ class Controller:
                 font = dialog.get_font_name()
             dialog.destroy()
             self.model.video.set_sub_font(font)
+            self.preferences['video-font'] = font
 
     def on_video_window_update_size(self, widget, value):
         self.preferences['Video-Size'] = value
@@ -652,14 +656,25 @@ class Controller:
         prefs = cPreferencesDialog(self.view, self.preferences.get_data(), (self.view['audio'].viewportLower, self.view['audio'].viewportUpper), self.preferences.filename)
         res = prefs.run()
         if res == Gtk.ResponseType.OK:
-            self.preferences.set_data(prefs.preferences)
-            curVH = self.view['audio'].viewportUpper
-            curVL = self.view['audio'].viewportLower
-            midV = curVL + (curVH - curVL) / 2
-            diff = 1 // self.preferences['Zoom']
-            self.view['audio'].viewportLower = midV - diff / 2
-            self.view['audio'].viewportUpper = midV + diff / 2
-            self.preferences.save()
+            if 'nuke-prefs' in prefs.preferences:
+                fn = self.preferences.filename
+                mru = self.preferences['MRU']
+                self.preferences = cPreferences(fn)
+                self.preferences['MRU'] = mru
+                self.view.subtitlesViewSize = 0.7
+                self.view.audioViewSize = 0.8
+                self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
+                self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
+                self.preferences.save()
+            else:
+                self.preferences.set_data(prefs.preferences)
+                curVH = self.view['audio'].viewportUpper
+                curVL = self.view['audio'].viewportLower
+                midV = curVL + (curVH - curVL) / 2
+                diff = 1 // self.preferences['Zoom']
+                self.view['audio'].viewportLower = midV - diff / 2
+                self.view['audio'].viewportUpper = midV + diff / 2
+                self.preferences.save()
         prefs.destroy()
 
     def on_quit(self, sender, event):

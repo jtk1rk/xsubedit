@@ -60,6 +60,10 @@ class cPreferencesDialog(Gtk.Dialog):
         hbox.add(self.SDPCheckButton)
         self.vbox.add(hbox)
 
+        resetPrefs = Gtk.Button('Reset Preferences')
+        self.action_area.pack_start(resetPrefs, False, False, 0)
+        self.action_area.reorder_child(resetPrefs, 0)
+
         self.SDCheckButton.connect('toggled', self.on_SD_toggle, 'Auto')
         self.SDPCheckButton.connect('toggled', self.on_SD_toggle, 'TwoPass')
 
@@ -68,6 +72,7 @@ class cPreferencesDialog(Gtk.Dialog):
 
         self.zoomEntry.set_text(str(self.preferences['Zoom']))
 
+        resetPrefs.connect('clicked', self.on_reset_prefs)
         self.CheckButton_Incremental_Backups.connect('clicked', self.CheckButton_Incremental_Backups_Clicked)
         self.CheckButton_Autosave.connect('clicked', self.CheckButton_Autosave_Clicked)
         self.enc_utf8_bom.connect('clicked', self.enc_utf8_bom_Clicked)
@@ -76,6 +81,10 @@ class cPreferencesDialog(Gtk.Dialog):
 
         self.vbox.show_all()
         self.set_default_response(Gtk.ResponseType.OK)
+
+    def on_reset_prefs(self, widget):
+        self.preferences['nuke-prefs'] = ''
+        self.response(Gtk.ResponseType.OK)
 
     def on_SD_toggle(self, widget, value):
         if value == 'Auto':

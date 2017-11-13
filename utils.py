@@ -208,7 +208,14 @@ def bisect(clist, key, value):
 
 @functools.lru_cache(maxsize = 2500)
 def filter_markup(text):
-    m = MarkupParser(text.replace('&', '&amp;'))
+    m = None
+    try:
+        tmp = MarkupParser(text)
+        m = tmp
+    except:
+        pass
+    if m is None:
+        m = MarkupParser(text.replace('&', '&amp;').replace('>','&gt;').replace('<', '&lt;'))
     keeptags = []
     for tag in m.tags:
         if tag.name.upper() in ['B', 'I']:

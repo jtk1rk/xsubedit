@@ -2,6 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from os.path import splitext
+from cfile import cfile
 
 class cProjectSettingsDialog(Gtk.Dialog):
     def __init__(self, parent, project):
@@ -99,6 +100,16 @@ class cProjectSettingsDialog(Gtk.Dialog):
         self.set_default_response(Gtk.ResponseType.OK)
         self.on_vo_toggled(voCheckButton)
 
+    def last_dir(self):
+        if 'videoFile' in self.project and self.project['videoFile'] != '':
+            return cfile(self.project['videoFile']).abspath
+        else:
+            for key in self.project:
+                if self.project[key] == '':
+                    continue
+                return cfile(self.project[key]).abspath
+        return ''
+
     def on_radio_toggle(self, sender, option):
         self.project['subPolicy'] = option
 
@@ -109,6 +120,9 @@ class cProjectSettingsDialog(Gtk.Dialog):
 
     def on_voButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Subtitle", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))
+        lastd = self.last_dir()
+        if lastd != '':
+            dialog.set_current_folder(lastd)
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('Reference Subtitle File')
@@ -126,6 +140,9 @@ class cProjectSettingsDialog(Gtk.Dialog):
 
     def on_subtitleButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Subtitle", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))
+        lastd = self.last_dir()
+        if lastd != '':
+            dialog.set_current_folder(lastd)
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('Subtitle File')
@@ -143,6 +160,9 @@ class cProjectSettingsDialog(Gtk.Dialog):
 
     def on_videoButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Video", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))
+        lastd = self.last_dir()
+        if lastd != '':
+            dialog.set_current_folder(lastd)
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('Video File')
@@ -187,6 +207,9 @@ class cProjectSettingsDialog(Gtk.Dialog):
 
     def on_projectButton_clicked(self, sender):
         dialog = Gtk.FileChooserDialog("Project", self.parent, Gtk.FileChooserAction.OPEN, ("_Cancel", Gtk.ResponseType.CANCEL, "_Open", Gtk.ResponseType.OK))
+        lastd = self.last_dir()
+        if lastd != '':
+            dialog.set_current_folder(lastd)
         dialog.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name('Project File')
