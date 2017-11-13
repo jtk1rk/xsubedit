@@ -205,15 +205,24 @@ class View(Gtk.Window):
         self.widgets['VCM-TwoPassSD'] = Gtk.CheckMenuItem('Two-pass Detection (faster)')
         self.widgets['VCM-TwoPassSD'].set_active(True)
         self.widgets['VCM-Detach'] = Gtk.MenuItem('Detach Video')
+        self.widgets['VCM-ChangeSubFont'] = Gtk.MenuItem('Change Subtitle Font')
+        self.widgets['VCM-Separator1'] = Gtk.SeparatorMenuItem()
+        self.widgets['VCM-Separator2'] = Gtk.SeparatorMenuItem()
 
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-SceneDetect'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-StopDetection'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-TwoPassSD'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Separator1'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-ChangeSubFont'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Separator2'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-Detach'])
 
         self.widgets['VCM-SceneDetect'].show()
         self.widgets['VCM-StopDetection'].hide()
         self.widgets['VCM-TwoPassSD'].show()
+        self.widgets['VCM-Separator1'].show()
+        self.widgets['VCM-ChangeSubFont'].show()
+        self.widgets['VCM-Separator2'].show()
         self.widgets['VCM-Detach'].show()
 
         # Containers

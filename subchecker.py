@@ -67,7 +67,7 @@ class cSubChecker(object):
         self.preposition += [u' Υπό', u'.Υπό', u' υπό']
         self.preposition += [u' Χάριν', u'.Χάριν', u' χάριν']
 
-        target_language = 'el' if platform.system() == 'Linux' else 'el_GR'
+        target_language = 'el_GR'
 
         if target_language not in enchant.list_languages():
             self.dict = None

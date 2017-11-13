@@ -36,7 +36,7 @@ class Model(GObject.GObject):
     def get_waveform(self):
         if self.peakFilename == "":
             return
-        f = open(self.peakFilename.decode('utf-8'), 'rb')
+        f = open(self.peakFilename, 'rb')
         dataFile = load(f)
         hiAudio = dataFile['arr_0']
         lowAudio = dataFile['arr_1']

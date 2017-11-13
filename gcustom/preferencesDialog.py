@@ -44,7 +44,7 @@ class cPreferencesDialog(Gtk.Dialog):
         self.CheckButton_Autosave.set_active(self.preferences['Autosave'])
         if self.preferences['Encoding'] == 'Windows-1253':
             self.enc_win1253.set_active(True)
-        elif self.preferences['Encoding'] == 'UTF-8 BOM':
+        elif self.preferences['Encoding'] == 'UTF-8-SIG':
             self.enc_utf8_bom.set_active(True)
 
         if not 'SceneDetect' in self.preferences:
@@ -91,10 +91,10 @@ class cPreferencesDialog(Gtk.Dialog):
 
     def on_useCurrentZoomButton_clicked(self, sender):
         if self.viewport[0] != self.viewport[1]:
-            self.zoomEntry.set_text( str(round(1 / float(self.viewport[1] - self.viewport[0]), 2)) )
+            self.zoomEntry.set_text( str(round(1 / (self.viewport[1] - self.viewport[0]), 2)) )
 
     def enc_utf8_bom_Clicked(self, sender):
-        self.preferences['Encoding'] = 'UTF-8 BOM'
+        self.preferences['Encoding'] = 'UTF-8-SIG'
 
     def enc_win1253_Clicked(self, sender):
         self.preferences['Encoding'] = 'Windows-1253'

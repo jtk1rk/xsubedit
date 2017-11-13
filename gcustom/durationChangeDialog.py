@@ -105,7 +105,7 @@ class cDurationChangeDialog(Gtk.Window):
         if sender_name != 'OK' or any(entry is None for entry in self.res.itervalues()) or self.subtitleModel.is_empty() or not(isfloat(self.res['originalMS']) or isfloat(self.res['targetMS'])):
             self.destroy()
             return
-        
+
         # Create list of subtitles to apply changes
         applyItems = []
         if self.res['applyTo'] == 'all lines':
@@ -117,7 +117,7 @@ class cDurationChangeDialog(Gtk.Window):
                 self.destroy()
                 return
             applyItems = self.tvSelectionList[:]
-        
+
         origMS = int(self.res['originalMS'])
         targetMS = int(self.res['targetMS'])
 

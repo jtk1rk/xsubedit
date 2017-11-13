@@ -27,8 +27,8 @@ class timeStamp(GObject.GObject):
             if self.__msec != timeData.__msec:
                 self.changed = True
             self.__msec = timeData.__msec
-        if (type(timeData) == int) or (type(timeData) == float) or (type(timeData) == long):
-            if self.__msec != timeData:
+        if (type(timeData) == int) or (type(timeData) == float):
+            if self.__msec != int(timeData):
                 self.changed = True
             self.__msec = timeData
         if type(timeData) == str and subutils.is_timestamp(timeData):
@@ -46,7 +46,7 @@ class timeStamp(GObject.GObject):
         return self.msec != other.msec
 
     def __gt__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int or type(other) == float:
             return self.__msec > other
         if isinstance(other, timeStamp):
             return self.__msec > other.__msec
@@ -56,7 +56,7 @@ class timeStamp(GObject.GObject):
             return self.__msec > subutils.ts2ms(other)
 
     def __lt__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int  or type(other) == float:
             return self.__msec < other
         if isinstance(other, timeStamp):
             return self.__msec < other.__msec
@@ -66,7 +66,7 @@ class timeStamp(GObject.GObject):
             return self.__msec < subutils.ts2ms(other)
 
     def __ge__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int  or type(other) == float:
             return self.__msec >= other
         if isinstance(other, timeStamp):
             return self.__msec >= other.__msec
@@ -76,7 +76,7 @@ class timeStamp(GObject.GObject):
             return self.__msec >= subutils.ts2ms(other)
 
     def __le__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int or type(other) == float:
             return self.__msec <= other
         if isinstance(other, timeStamp):
             return self.__msec <= other.__msec
@@ -86,7 +86,7 @@ class timeStamp(GObject.GObject):
             return self.__msec <= subutils.ts2ms(other)
 
     def __add__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int or type(other) == float:
             return timeStamp(self.__msec + other)
         if isinstance(other, timeStamp):
             return timeStamp(self.__msec + other.__msec)
@@ -96,7 +96,7 @@ class timeStamp(GObject.GObject):
             return timeStamp(self.__msec + subutils.ts2ms(other))
 
     def __sub__(self, other):
-        if type(other) == int or type(other) == long or type(other) == float:
+        if type(other) == int or type(other) == float:
             return timeStamp(self.__msec - other)
         if isinstance(other, timeStamp):
             return timeStamp(self.__msec - other.__msec)
@@ -112,7 +112,7 @@ class timeStamp(GObject.GObject):
         return self.__msec * other
 
     def __div__(self, other):
-        return self.__msec / other
+        return self.__msec // other
 
 class subRec(GObject.GObject):
     __gsignals__ = { 'updated': (GObject.SIGNAL_RUN_LAST, None, (str, )) }
@@ -223,17 +223,17 @@ class subRec(GObject.GObject):
             self.__info_audio_str = ''
             self.__info = {}
             return
-        if not self.__info.has_key(value[0]) or self.__info[value[0]] != value[1]:
+        if not value[0] in self.__info or self.__info[value[0]] != value[1]:
             if value[1] == '':
-                if self.__info.has_key(value[0]):
+                if value[0] in self.__info:
                     self.__info.pop(value[0])
             else:
                 self.__info[value[0]] = value[1]
             text_key_list = [key for key in self.__info if key.startswith('Text')]
-            for i in xrange(len(text_key_list)):
+            for i in range(len(text_key_list)):
                 key = text_key_list[i]
                 prev_color = None
-                for j in xrange(0, i):
+                for j in range(0, i):
                     jkey = text_key_list[j]
                     if self.check_shared_interval(self.__info[key][1], self.__info[jkey][1]):
                         prev_color = self.__info[jkey][2]
@@ -305,7 +305,7 @@ class subRec(GObject.GObject):
         self.stopTime.changed = False
 
     def __str__(self):
-        return (str(self.startTime) + " --> " + str(self.stopTime) + '\n' + self.text + '\n').encode("utf-8")
+        return (str(self.startTime) + " --> " + str(self.stopTime) + '\n' + self.text + '\n')
 
     def calc_char_count(self):
         if self.text == None or self.text == '':
@@ -332,9 +332,9 @@ class subRec(GObject.GObject):
         self.duration = (self.stopTime - self.startTime) if self.stopTime >= self.startTime else (self.startTime - self.stopTime)
 
     def calc_rs(self):
-        duration = int(self.duration) / 1000.0
+        duration = int(self.duration) / 1000
         target_duration = self.calc_target_duration()
-        self.rs = str(round((40 * target_duration / 1000.0 - 20) / float(2 * duration - 1),1)) if duration > 0.5 else "Inf"
+        self.rs = str(round((40 * target_duration / 1000 - 20) / (2 * duration - 1),1)) if duration > 0.5 else "Inf"
 
     def update_data(self):
         self.calc_char_count()
@@ -379,7 +379,7 @@ class Subtitles(GObject.GObject):
     def index(self, sub):
         # apo lookup
         res = None
-        for i in xrange(len(self.subs)):
+        for i in range(len(self.subs)):
             if self.subs[i][self.COL_SUB] == sub:
                 res = i
                 break
@@ -462,7 +462,7 @@ class Subtitles(GObject.GObject):
             listIter = self.subs.append()
             idx = len(self.subs) - 1
         else:
-            for i in xrange(len(self.subs)):
+            for i in range(len(self.subs)):
                 if sub.startTime < self.subs[i][0].startTime:
                     idx = i
                     break;
@@ -583,4 +583,4 @@ class Subtitles(GObject.GObject):
             self.subs[path][self.COL_SUB_INFO] = sub.info_audio_str
 
     def get_sub_list(self):
-        return [self.subs[i][self.COL_SUB] for i in xrange(len(self.subs))]
+        return [self.subs[i][self.COL_SUB] for i in range(len(self.subs))]

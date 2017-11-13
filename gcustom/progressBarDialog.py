@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from progressBar import cProgressBar
+from .progressBar import cProgressBar
 
 class cProgressBarDialog(Gtk.Window):
     def __init__(self, parent, title, label = ''):

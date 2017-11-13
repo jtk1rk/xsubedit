@@ -2,7 +2,7 @@ import gi
 gi.require_version('GObject', '2.0')
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
-import subprocess, locale
+import subprocess
 import subutils
 import re
 
@@ -20,7 +20,7 @@ class cffmpeg(GObject.GObject):
         self.codec = None
 
     def run(self):
-        pipe = subprocess.Popen(self.exec_cmd.encode(locale.getpreferredencoding()), shell = True, stdout=subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True)
+        pipe = subprocess.Popen(self.exec_cmd, shell = True, stdout=subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True)
 
         line = ""
 
@@ -46,7 +46,7 @@ class cffmpeg(GObject.GObject):
         else:
             match = self.re_position.search(line)
             if match:
-                self.progress = subutils.ts2ms(match.group(0)[5:]) / float(self.duration)
+                self.progress = subutils.ts2ms(match.group(0)[5:]) / self.duration
                 self.emit('progress', self.progress if self.progress <= 1 else 1)
 
     def process_messages(self):

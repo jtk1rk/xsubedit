@@ -48,7 +48,7 @@ echo "Package: xSubEdit
 Version: $ver
 Architecture: all
 Maintainer: James T. Kirk
-Depends: python2.7, python-enchant, python-numpy, gir1.2-gtkspell3-3.0, python-regex, mediainfo, ffmpeg, myspell-el-gr, gstreamer1.0-alsa, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly, gstreamer1.0-tools, gstreamer1.0-libav, python-appdirs, python-requests, python-bs4, gir1.2-gstreamer-1.0, gir1.2-gst-plugins-base-1.0, python-gi-cairo, python-scipy, python-lxml
+Depends: python3, python3-enchant, python3-numpy, gir1.2-gtkspell3-3.0, python3-regex, mediainfo, ffmpeg, myspell-el-gr, gstreamer1.0-alsa, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-plugins-ugly, gstreamer1.0-tools, gstreamer1.0-libav, python3-appdirs, python3-requests, python3-bs4, gir1.2-gstreamer-1.0, gir1.2-gst-plugins-base-1.0, python3-gi-cairo, python3-scipy, python3-lxml
 Homepage: http://xsubedit.blogspot.gr
 Description: Greek Subtitle Editor
  xSubEdit is a subtitle editor made specifically for creating/translating subtitles into the Greek language.

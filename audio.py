@@ -1,6 +1,7 @@
 from numpy import exp
 from math import floor, ceil
 from utils import StretchableList
+import functools
 
 iround = lambda x: int(round(x))
 
@@ -27,14 +28,14 @@ class Audio(object):
             self.lowData[self.lowData > 1] = 1
             self.cache = (0,0,0,[])
         if type == 'logarithmic':
-            for i in xrange(10):
+            for i in range(10):
                 self.hiData[i] = 0
             self.hiData = exp(self.__hiData * value)
-            self.hiData = self.hiData / max(self.hiData)
-            for i in xrange(10):
+            self.hiData = self.hiData // max(self.hiData)
+            for i in range(10):
                 self.lowData[i] = 0
             self.lowData = exp(self.__lowData * value)
-            self.lowData = self.lowData / max(self.lowData)
+            self.lowData = self.lowData // max(self.lowData)
             self.cache = (0,0,0,[])
 
     def set_width(self, width):
@@ -52,8 +53,8 @@ class Audio(object):
         res = []
         lowerIDX = lower * self.dataSize + VSS_DIFF
         upperIDX = upper * self.dataSize + VSS_DIFF
-        spp = float(upperIDX - lowerIDX) / self.width
-        for i in xrange(iround(self.width)):
+        spp = (upperIDX - lowerIDX) / self.width
+        for i in range(iround(self.width)):
             lidx = int(floor(lowerIDX + (i - 0.5 ) * spp))
             hidx = int(ceil(lowerIDX + (i + 0.5) * spp))
             lidx = lidx if lidx > 0 else 0

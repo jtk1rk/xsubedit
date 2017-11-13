@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from progressBar import cProgressBar
+from .progressBar import cProgressBar
 from os.path import exists
 from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
@@ -30,7 +30,7 @@ class cRawGenerationDialog(Gtk.Window):
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
 
     def ffmpeg_progress(self, sender, value):
-        self.set_progress(float(value) / 2)
+        self.set_progress(value / 2)
 
     def run(self):
         self.show()

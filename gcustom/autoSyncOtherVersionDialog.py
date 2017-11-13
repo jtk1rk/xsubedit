@@ -1,8 +1,8 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
-from rawGenerationDialog import cRawGenerationDialog
-from progressBarDialog import cProgressBarDialog
+from .rawGenerationDialog import cRawGenerationDialog
+from .progressBarDialog import cProgressBarDialog
 from utils import isint, iround
 from os.path import split, splitext, join, exists
 from subfile import srtFile
@@ -119,7 +119,7 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
     def match_low(src, dst, subList):
         if len(subList) < 10:
             return None
-        for i in xrange(10):
+        for i in range(10):
             sub = subList[5 + i]
             res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
             if not (res is None):
@@ -128,7 +128,7 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
     def match_high(src, dst, subList):
         if len(subList) < 10:
             return None
-        for i in xrange(10):
+        for i in range(10):
             sub = subList[-1 * i - 5]
             res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
             if not (res is None):
@@ -137,7 +137,7 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
     def match_middle(src, dst, subList):
         if len(subList) < 10:
             return None
-        for i in xrange(10):
+        for i in range(10):
             sub = subList[ iround( (len(subList) / 2.0) - 5 + i ) ]
             res = autoSyncTools.match(src, dst, int(sub.startTime), int(sub.stopTime), 0)
             if not (res is None):
@@ -177,7 +177,7 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
 
         # match subs
         pb = cProgressBarDialog(self, 'Matching subtitles...', 'Matching subtitle 0 / %d' % len(self.subs))
-        pb.set_progress(idx / float(len(self.subs)))
+        pb.set_progress(idx / len(self.subs))
         pb.update_info('Matching subtitle %d / %d' % (idx, len(self.subs)))
 
         # Step 1: match a low, middle and high subs
@@ -192,11 +192,11 @@ class cAutoSyncOtherVersionDialog(Gtk.Window):
         if 0.95 < rate2 / rate1 < 1.05:
             dst_sublist = [subRec(sub.startTime, sub.stopTime, sub.text) for sub in self.subs]
             d0 = int(dst_sublist[0].startTime)
-            drate = (rate1 + rate2) / 2.0
+            drate = (rate1 + rate2) / 2
             for sub in dst_sublist:
                 sub.startTime -= d0
                 sub.stopTime -= d0
-                srate = (sub - d0) / len(self.subs)
+                srate = (sub - d0) // len(self.subs)
 
         else:
             pass # split into two lists, fist half and second half

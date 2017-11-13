@@ -2,7 +2,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from progressBar import cProgressBar
+from .progressBar import cProgressBar
 from subchecker import cSubChecker
 
 class cSubCheckerDialog(Gtk.Window):
@@ -38,7 +38,7 @@ class cSubCheckerDialog(Gtk.Window):
             sub.info = {}
         # Iterate through all subtitles
         # and perform checks
-        for i in xrange(len(self.subList)):
+        for i in range(len(self.subList)):
             prevSub = self.subList[i - 1] if i - 1 > 0 else None
             curSub = self.subList[i]
             nextSub = self.subList[i + 1] if i + 1 < len(self.subList) else None
@@ -75,23 +75,23 @@ class cSubCheckerDialog(Gtk.Window):
 
         self.set_progress(0)
         self.subChecker.check_time_gap()
-        self.set_progress(1/9.0)
+        self.set_progress(1/9)
         self.subChecker.check_duration()
-        self.set_progress(2/9.0)
+        self.set_progress(2/9)
         self.subChecker.check_ellipsis_and_ending()
-        self.set_progress(3/9.0)
+        self.set_progress(3/9)
         self.subChecker.check_gap_after_punctuation()
-        self.set_progress(4/9.0)
+        self.set_progress(4/9)
         self.subChecker.check_ending_with_article()
-        self.set_progress(5/9.0)
+        self.set_progress(5/9)
         self.subChecker.check_ending_with_preposition()
-        self.set_progress(6/9.0)
+        self.set_progress(6/9)
         self.subChecker.check_multiple_whitespaces()
-        self.set_progress(7/9.0)
+        self.set_progress(7/9)
         self.subChecker.check_orthography()
-        self.set_progress(8/9.0)
+        self.set_progress(8/9)
         self.subChecker.check_final_n()
-        self.set_progress(9/9.0)
+        self.set_progress(9/9)
         self.destroy()
 
     def process_messages(self):

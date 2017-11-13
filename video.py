@@ -37,13 +37,18 @@ class Video(GObject.GObject):
         self.playbin.set_property('video-sink', gstbin)
         self.sink.set_property('force-aspect-ratio', True)
         self.playbus = self.playbin.get_bus()
-        #self.textoverlay.set_property("font-desc", 'Arial 25')
+        self.textoverlay.set_property("font-desc", 'Verdana 24')
         self.playbus.add_signal_watch()
         self.playbus.connect('message', self.on_message)
 
     def set_duration(self, value):
         if self.videoDuration == 0:
             self.videoDuration = value * 10**3
+
+    def set_sub_font(self, font):
+        if font == '':
+            return
+        self.textoverlay.set_property('font-desc', font)
 
     def on_message(self, bus, message):
         t = message.type
@@ -52,10 +57,10 @@ class Video(GObject.GObject):
             self.position_update()
         elif t == Gst.MessageType.WARNING:
             err,  debug = message.parse_warning()
-            print 'Error %s ' % err, debug
+            print('Error %s ' % err, debug)
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
-            print 'Error %s ' % err, debug
+            print('Error %s ' % err, debug)
 
     def set_segment(self, segment):
         if segment != self.__last_segment:
@@ -67,6 +72,7 @@ class Video(GObject.GObject):
 
     def set_video_filename(self, filename):
         self.videoFilename = filename;
+        self.playbin.set_property('current-text', -1)
         self.playbin.set_property('uri', 'file:///' + filename)
         self.playbin.set_state(Gst.State.PAUSED)
         if self.playbin.get_state(0)[0] == Gst.StateChangeReturn.FAILURE:
@@ -90,7 +96,7 @@ class Video(GObject.GObject):
             if self.videoDuration != 0:
                 self.emit("videoDuration-Ready", self.videoDuration)
         except:
-            print "Error querying video duration"
+            print("Error querying video duration")
 
     def play(self):
         if self.videoDuration == 0:
@@ -114,7 +120,7 @@ class Video(GObject.GObject):
             self.play_update_handle = None
             return False
         nsec = self.playbin.query_position(Gst.Format.TIME)[1]
-        self.videoPosition = nsec / float(self.videoDuration)
+        self.videoPosition = nsec / self.videoDuration
         self.emit("position-update", self.videoPosition)
         return True
 

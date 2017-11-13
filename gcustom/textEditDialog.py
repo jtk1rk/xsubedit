@@ -12,9 +12,9 @@ from sites.GoogleTranslate import translate as GTrans
 from sites.WordReference import translate as WRTrans
 from sites.UrbanDictionary import meaning as UDMeaning
 from sites.TheFreeDictionary import meaning as TFDMeaning
-from gcustom.textResultWin import cTextResultWin
+from .textResultWin import cTextResultWin
 
-import customspell as GtkSpell
+from . import customspell as GtkSpell
 
 def custom_insert_markup(buff,  markup):
     tagText = cTagText()
@@ -398,12 +398,12 @@ class cTextEditDialog(Gtk.Dialog):
         lines = self.text_view.get_buffer().get_text(self.text_view.get_buffer().get_start_iter(), self.text_view.get_buffer().get_end_iter(), False)
         tmptext = lines
         lines = lines.split('\n')
-        tmp = '\n'.join(map(lambda i: str(len(i.decode("utf-8").replace('<i>','').replace('</i>','').replace('<b>','').replace('</b>',''))), lines))
+        tmp = '\n'.join(map(lambda i: str(len(i.replace('<i>','').replace('</i>','').replace('<b>','').replace('</b>',''))), lines))
         self.char_count.get_buffer().set_text(tmp)
-        self.sub.text = tmptext.decode('utf-8')
+        self.sub.text = tmptext
         self.rs_value_label.set_markup(self.sub.rs_str)
 
     def buffer_changed(self, sender):
-        self.text = sender.get_text(sender.get_start_iter(), sender.get_end_iter(), include_hidden_chars = True).decode('utf-8')
+        self.text = sender.get_text(sender.get_start_iter(), sender.get_end_iter(), include_hidden_chars = True)
         self.history.update()
         self.update_count()

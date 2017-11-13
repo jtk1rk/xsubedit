@@ -11,9 +11,9 @@ def ts2ms(ts):
 
 def ms2ts(ms):
 # converts miliseconds to hh:mm:ss,msc (msc=miliseconds)
-    tsec = int(ms / 1000)
-    hh = tsec / 3600
-    mm = (tsec - hh * 3600) / 60
+    tsec = int(ms // 1000)
+    hh = tsec // 3600
+    mm = (tsec - hh * 3600) // 60
     ss = (tsec - hh * 3600 - mm * 60)
     mil= ms - tsec * 1000
     tmp = str(hh).zfill(2)+":"+str(mm).zfill(2)+":"+str(ss).zfill(2)+","+str(mil).zfill(3)

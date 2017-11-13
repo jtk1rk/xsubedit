@@ -260,7 +260,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             subs = self.dragging_sublist
             subs[-1].startTime = int(subs[-1].obj.startTime) + (msec - origmsec)
             subs[-1].stopTime = int(subs[-1].obj.stopTime) + (msec - origmsec)
-            factor = (subs[-1].startTime - subs[0].startTime) / float( int(subs[-1].obj.startTime) - subs[0].startTime)
+            factor = (subs[-1].startTime - subs[0].startTime) / ( int(subs[-1].obj.startTime) - subs[0].startTime)
             for sub in subs[:-1]: # calculate strech here
                 sub.startTime = int( (int(sub.obj.startTime) - subs[0].startTime) * factor + subs[0].startTime )
                 sub.stopTime = int( (int(sub.obj.stopTime) - subs[0].startTime) * factor + subs[0].startTime )
@@ -311,7 +311,7 @@ class cSyncAudioWidget(Gtk.EventBox):
         na = self.viewportLower * 100
         nb = self.viewportUpper * 100
 
-        center = xcoord / float(self.width)
+        center = xcoord / self.width
         a = self.viewportLower * 100
         b = self.viewportUpper * 100
         c = a + (b-a) * center
@@ -352,11 +352,11 @@ class cSyncAudioWidget(Gtk.EventBox):
 
         moveval = 25 * self.mspp
         if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.audioDuration:
-            self.viewportLower = (self.lowms + moveval) / float(self.audioDuration)
-            self.viewportUpper = (self.highms + moveval) / float(self.audioDuration)
+            self.viewportLower = (self.lowms + moveval) / self.audioDuration
+            self.viewportUpper = (self.highms + moveval) / self.audioDuration
         elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:
-            self.viewportLower = (self.lowms - moveval) / float(self.audioDuration)
-            self.viewportUpper = (self.highms - moveval) / float(self.audioDuration)
+            self.viewportLower = (self.lowms - moveval) / self.audioDuration
+            self.viewportUpper = (self.highms - moveval) / self.audioDuration
 
         self.queue_draw()
 
@@ -526,38 +526,38 @@ class cSyncAudioWidget(Gtk.EventBox):
         self.__highms = val
 
     def get_mouse_msec(self, pos):
-        return int(self.lowms + (pos / float(self.width)) * (self.highms - self.lowms))
+        return int(self.lowms + (pos / self.width) * (self.highms - self.lowms))
 
     def get_viewport_pos_from_ms(ms):
-        return (ms / self.audioDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) * widget.get_allocation().width
+        return (ms // self.audioDuration - self.viewportLower) / (self.viewportUpper - self.viewportLower) * widget.get_allocation().width
 
     def calc_parameters(self):
         self.lowms = self.viewportLower * self.audioDuration
         self.highms = self.viewportUpper * self.audioDuration
-        self.mspp = (self.highms - self.lowms) / float(self.width)
+        self.mspp = (self.highms - self.lowms) / self.width
         self.grayarea = self.grayms / self.mspp
         if self.subtitlesModel != None:
             self.subList = set(self.subtitlesModel.list_subs_overlapping_window(self.lowms - 120, self.highms))
-        self.ms_to_coord_factor = self.width / (float(self.viewportUpper - self.viewportLower) * self.audioDuration)
-        self.low_ms_coord  = (self.viewportLower * self.width) / float(self.viewportUpper - self.viewportLower)
+        self.ms_to_coord_factor = self.width / ((self.viewportUpper - self.viewportLower) * self.audioDuration)
+        self.low_ms_coord  = (self.viewportLower * self.width) / (self.viewportUpper - self.viewportLower)
 
     def center_active_sub(self):
         low = int(self.activeSub.startTime)
         high = int(self.activeSub.stopTime)
-        msdur = (high - low) / 2
+        msdur = (high - low) // 2
         if self.stickZoom:
             vpwidthms = (self.viewportUpper - self.viewportLower) * float(self.audioDuration)
             centerms = (low + msdur)
-            lms = (centerms - (vpwidthms / 2))
-            ums = (centerms + (vpwidthms / 2))
+            lms = (centerms - (vpwidthms // 2))
+            ums = (centerms + (vpwidthms // 2))
             if lms < 0:
                 ums += abs(lms)
                 lms = 0
             elif ums > self.audioDuration:
                 lms -= ums - self.audioDuration
                 ums = self.audioDuration
-            self.viewportLower = lms / float(self.audioDuration)
-            self.viewportUpper = ums / float(self.audioDuration)
+            self.viewportLower = lms / self.audioDuration
+            self.viewportUpper = ums / self.audioDuration
         else:
             if msdur < 1000:
                 msdur = 1000
@@ -567,20 +567,20 @@ class cSyncAudioWidget(Gtk.EventBox):
                 low = 0
             if high > self.audioDuration:
                 high = self.audioDuration
-            self.viewportLower = (low / float(self.audioDuration))
-            self.viewportUpper = (high / float(self.audioDuration))
+            self.viewportLower = (low / self.audioDuration)
+            self.viewportUpper = (high / self.audioDuration)
 
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()
         self.videoSegment = (int(self.activeSub.startTime), int(self.activeSub.stopTime))
-        self.emit('sync-viewpos-update', int(low * 100.0 / self.audioDuration))
+        self.emit('sync-viewpos-update', int(low * 100 / self.audioDuration))
 
     def center_multiple_active_subs(self, startTime, stopTime):
         self.videoSegment = (int(startTime), int(stopTime))
-        subWidthPerc = (stopTime - startTime) / float(self.audioDuration)
-        lowPerc = startTime / float(self.audioDuration) - subWidthPerc * 0.8
-        highPerc = stopTime / float(self.audioDuration) + subWidthPerc * 0.8
+        subWidthPerc = (stopTime - startTime) / self.audioDuration
+        lowPerc = startTime / self.audioDuration - subWidthPerc * 0.8
+        highPerc = stopTime / self.audioDuration + subWidthPerc * 0.8
         self.viewportLower = lowPerc if lowPerc >= 0 else 0
         self.viewportUpper = highPerc if highPerc <= 1 else 1
         self.queue_draw()
@@ -606,9 +606,9 @@ class cSyncAudioWidget(Gtk.EventBox):
             cc.paint()
             cc.set_source_rgba(0.0329, 0.122, 0.301, 0.9)
             cc.set_line_width(1)
-            for i in xrange(len(self.audioData)):
-                cc.move_to(i, height / 2.0 - self.audioData[i][0] * height / 2.0)
-                cc.line_to(i, height / 2.0 + self.audioData[i][1] * height / 2.0)
+            for i in range(len(self.audioData)):
+                cc.move_to(i, height / 2 - self.audioData[i][0] * height / 2)
+                cc.line_to(i, height / 2 + self.audioData[i][1] * height / 2)
             cc.stroke()
 
         # Draw Cavnas Buffer (if invalidated)
@@ -656,7 +656,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             # Draw Subtitle Text
             fontSize = 10
             if self.viewportLower != self.viewportUpper:
-                zoom = 1 / float(self.viewportUpper - self.viewportLower)
+                zoom = 1 / (self.viewportUpper - self.viewportLower)
                 fontSize = fontSize if not 10 <= zoom <= 15 else zoom + 1
                 fontSize = 16 if zoom > 15 else fontSize
             cc.set_font_size(fontSize)
@@ -665,7 +665,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             if tmpText != []:
                 tmpSize = cc.text_extents(max(tmpText, key=len))
                 if tmpSize[2] < painthigh - paintlow:
-                    for i in xrange(len(tmpText)):
+                    for i in range(len(tmpText)):
                         cc.move_to(paintlow+2, 20 + i * (tmpSize[3] + 5))
                         cc.show_text(tmpText[i])
 
@@ -729,7 +729,7 @@ class cSyncAudioWidget(Gtk.EventBox):
             tmpText = self.mouse_over_sub.text.splitlines()
             if tmpText != []:
                 tmpSize = cc.text_extents(max(tmpText, key=len))
-                for i in xrange(len(tmpText)):
+                for i in range(len(tmpText)):
                     cc.move_to(2, 20 + i * (tmpSize[3] + 5))
                     cc.show_text(tmpText[i])
 

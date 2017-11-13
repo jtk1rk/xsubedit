@@ -287,7 +287,7 @@ class cAudioWidget(Gtk.EventBox):
         na = self.viewportLower * 100
         nb = self.viewportUpper * 100
 
-        center = xcoord / float(self.width)
+        center = xcoord / self.width
         a = self.viewportLower * 100
         b = self.viewportUpper * 100
         c = a + (b-a) * center
@@ -328,11 +328,11 @@ class cAudioWidget(Gtk.EventBox):
 
         moveval = 25 * self.mspp
         if event.direction == Gdk.ScrollDirection.DOWN and self.highms + moveval < self.audioDuration:
-            self.viewportLower = (self.lowms + moveval) / float(self.audioDuration)
-            self.viewportUpper = (self.highms + moveval) / float(self.audioDuration)
+            self.viewportLower = (self.lowms + moveval) / self.audioDuration
+            self.viewportUpper = (self.highms + moveval) / self.audioDuration
         elif event.direction == Gdk.ScrollDirection.UP and self.lowms > moveval:
-            self.viewportLower = (self.lowms - moveval) / float(self.audioDuration)
-            self.viewportUpper = (self.highms - moveval) / float(self.audioDuration)
+            self.viewportLower = (self.lowms - moveval) / self.audioDuration
+            self.viewportUpper = (self.highms - moveval) / self.audioDuration
 
         self.queue_draw()
 
@@ -534,39 +534,39 @@ class cAudioWidget(Gtk.EventBox):
         self.__highms = val
 
     def get_mouse_msec(self, pos):
-        return int(self.lowms + (pos / float(self.width)) * (self.highms - self.lowms))
+        return int(self.lowms + (pos / self.width) * (self.highms - self.lowms))
 
     def get_viewport_pos_from_ms(ms):
-        return (ms / self.audioDuration - self.viewportLower) / float(self.viewportUpper - self.viewportLower) * widget.get_allocation().width
+        return (ms // self.audioDuration - self.viewportLower) / (self.viewportUpper - self.viewportLower) * widget.get_allocation().width
 
     def calc_parameters(self):
         self.lowms = self.viewportLower * self.audioDuration
         self.highms = self.viewportUpper * self.audioDuration
-        self.mspp = (self.highms - self.lowms) / float(self.width)
+        self.mspp = (self.highms - self.lowms) / self.width
         self.grayarea = self.grayms / self.mspp
         if self.subtitlesModel != None:
             self.subList = set(self.subtitlesModel.list_subs_overlapping_window(self.lowms - 120, self.highms))
         self.voList = self.voModel.get_subs_in_range(self.lowms - 120, self.highms)
-        self.ms_to_coord_factor = self.width / (float(self.viewportUpper - self.viewportLower) * self.audioDuration)
-        self.low_ms_coord  = (self.viewportLower * self.width) / float(self.viewportUpper - self.viewportLower)
+        self.ms_to_coord_factor = self.width / ((self.viewportUpper - self.viewportLower) * self.audioDuration)
+        self.low_ms_coord  = (self.viewportLower * self.width) / (self.viewportUpper - self.viewportLower)
 
     def center_active_sub(self):
         low = int(self.activeSub.startTime)
         high = int(self.activeSub.stopTime)
-        msdur = (high - low) / 2
+        msdur = (high - low) // 2
         if self.stickZoom:
             vpwidthms = (self.viewportUpper - self.viewportLower) * float(self.audioDuration)
             centerms = (low + msdur)
-            lms = (centerms - (vpwidthms / 2))
-            ums = (centerms + (vpwidthms / 2))
+            lms = (centerms - (vpwidthms // 2))
+            ums = (centerms + (vpwidthms // 2))
             if lms < 0:
                 ums += abs(lms)
                 lms = 0
             elif ums > self.audioDuration:
                 lms -= ums - self.audioDuration
                 ums = self.audioDuration
-            self.viewportLower = lms / float(self.audioDuration)
-            self.viewportUpper = ums / float(self.audioDuration)
+            self.viewportLower = lms / self.audioDuration
+            self.viewportUpper = ums / self.audioDuration
         else:
             if msdur < 1000:
                 msdur = 1000
@@ -576,36 +576,36 @@ class cAudioWidget(Gtk.EventBox):
                 low = 0
             if high > self.audioDuration:
                 high = self.audioDuration
-            self.viewportLower = (low / float(self.audioDuration))
-            self.viewportUpper = (high / float(self.audioDuration))
+            self.viewportLower = (low / self.audioDuration)
+            self.viewportUpper = (high / self.audioDuration)
 
         self.isCanvasBufferValid = False
         self.cursor = low
         self.queue_draw()
         self.videoSegment = (int(self.activeSub.startTime), int(self.activeSub.stopTime))
-        self.emit('viewpos-update', int(low * 100.0 / self.audioDuration))
+        self.emit('viewpos-update', int(low * 100 / self.audioDuration))
 
     def center_multiple_active_subs(self, startTime, stopTime):
         if self.stickZoom:
-            center = (startTime + stopTime) / 2.0
-            center /= float(self.audioDuration)
+            center = (startTime + stopTime) / 2
+            center /= self.audioDuration
             currWidth = ( self.viewportUpper - self.viewportLower )
-            if center - currWidth / 2  < 0:
+            if center - currWidth // 2  < 0:
                 self.viewportLower = 0
                 self.viewportUpper = currWidth
-            elif center + currWidth / 2 > 1:
+            elif center + currWidth // 2 > 1:
                 self.viewportLower = 1 - currWidth
                 self.viewportUpper = 1
             else:
-                self.viewportLower = center - currWidth / 2
-                self.viewportUpper = center + currWidth / 2
+                self.viewportLower = center - currWidth // 2
+                self.viewportUpper = center + currWidth // 2
             self.queue_draw()
             self.emit('viewpos-update', int(self.viewportLower * 100))
         else:
             self.videoSegment = (int(startTime), int(stopTime))
-            subWidthPerc = (stopTime - startTime) / float(self.audioDuration)
-            lowPerc = startTime / float(self.audioDuration) - subWidthPerc * 0.8
-            highPerc = stopTime / float(self.audioDuration) + subWidthPerc * 0.8
+            subWidthPerc = (stopTime - startTime) / self.audioDuration
+            lowPerc = startTime / self.audioDuration - subWidthPerc * 0.8
+            highPerc = stopTime / self.audioDuration + subWidthPerc * 0.8
             self.viewportLower = lowPerc if lowPerc >= 0 else 0
             self.viewportUpper = highPerc if highPerc <= 1 else 1
             self.queue_draw()
@@ -630,9 +630,9 @@ class cAudioWidget(Gtk.EventBox):
             cc.paint()
             cc.set_source_rgba(0.0702, 0.5616, 0.2808, 0.8)
             cc.set_line_width(1)
-            for i in xrange(len(self.audioData)):
-                cc.move_to(i, height / 2.0 - self.audioData[i][0] * height / 2.0)
-                cc.line_to(i, height / 2.0 + self.audioData[i][1] * height / 2.0)
+            for i in range(len(self.audioData)):
+                cc.move_to(i, height / 2 - self.audioData[i][0] * height / 2)
+                cc.line_to(i, height / 2 + self.audioData[i][1] * height / 2)
             cc.stroke()
 
         # Draw Cavnas Buffer (if invalidated)
@@ -686,7 +686,7 @@ class cAudioWidget(Gtk.EventBox):
             if tmpText != []:
                 tmpSize = cc.text_extents(max(tmpText, key=len))
                 if tmpSize[2] < painthigh - paintlow:
-                    for i in xrange(len(tmpText)):
+                    for i in range(len(tmpText)):
                         cc.move_to(paintlow+2, 20 + i * (tmpSize[3] + 5))
                         cc.show_text(tmpText[i])
 
@@ -696,14 +696,14 @@ class cAudioWidget(Gtk.EventBox):
             cc.set_source_rgba(0.3, 0.4, 0.9, 0.7)
             cc.set_dash([6, 6, 6, 4])
             if sub[0] >= self.lowms and sub[0] <= self.highms:
-                cc.move_to(paintlow, (2/3.0) * height)
+                cc.move_to(paintlow, (2 / 3) * height)
                 cc.line_to(paintlow, height - 2)
-                cc.move_to(paintlow+1, (2/3.0) * height)
+                cc.move_to(paintlow+1, (2 / 3) * height)
                 cc.line_to(paintlow+1, height - 2)
             if sub[1] >= self.lowms and sub[1] <= self.highms:
-                cc.move_to(painthigh, (2/3.0) * height)
+                cc.move_to(painthigh, (2 / 3) * height)
                 cc.line_to(painthigh, height - 2)
-                cc.move_to(painthigh-1, (2/3.0) * height)
+                cc.move_to(painthigh-1, (2 / 3) * height)
                 cc.line_to(painthigh-1, height - 2)
             cc.stroke()
 
@@ -714,7 +714,7 @@ class cAudioWidget(Gtk.EventBox):
                 tmpSize = cc.text_extents(max(tmpText, key=len))
                 if tmpSize[2] < painthigh - paintlow:
                     linecount = len(tmpText)
-                    for i in xrange(len(tmpText)):
+                    for i in range(len(tmpText)):
                         cc.move_to(paintlow+2, height - (linecount * (tmpSize[3] + 2)) + i * (tmpSize[3] + 5))
                         cc.show_text(tmpText[i])
 

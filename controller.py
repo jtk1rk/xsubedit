@@ -75,7 +75,7 @@ class Controller:
 
         try:
             makedirs(appdirs.user_config_dir('xSubEdit', 'jtapps'))
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
 
@@ -150,6 +150,7 @@ class Controller:
         view['VCM-SceneDetect'].connect('activate', self.on_VCM, 'VCM-SceneDetect')
         view['VCM-StopDetection'].connect('activate', self.on_VCM, 'VCM-StopDetection')
         view['VCM-Detach'].connect('activate', self.on_VCM, 'VCM-Detach')
+        view['VCM-ChangeSubFont'].connect('activate', self.on_VCM, 'VCM-ChangeSubFont')
         view['splitSubsTB'].connect('clicked', self.on_TB_split)
         view['autoSyncOtherVersionTB'].connect('clicked', self.on_autoSyncOtherVersion_clicked)
 
@@ -246,7 +247,7 @@ class Controller:
         # Final initializations
         self.preferences.load()
         if 'Zoom' in self.preferences:
-            view['audio'].viewportUpper = 1 / float(self.preferences['Zoom'])
+            view['audio'].viewportUpper = 1 / self.preferences['Zoom']
         self.autosaveHandle = None
         view['subtitles'].override_background_color(Gtk.StateFlags.SELECTED, Gdk.RGBA(0.5, 0.5, 0.7, 1))
         if 'subViewSize' in self.preferences and 'audioViewSize' in self.preferences:
@@ -324,7 +325,7 @@ class Controller:
         slist_before = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
         self.vSyncWidget = cSyncAudioWidget(self.view.widgets['audio-scale-container'], self.view['audio'])
         self.vSyncWidget.subtitlesModel = self.model.subtitles
-        self.vSyncWidget.audioDuration = self.audioDuration / 1000
+        self.vSyncWidget.audioDuration = self.audioDuration // 1000
         self.vSyncWidget.audioModel = self.model.audio
         self.vSyncWidget.sceneModel = self.model.scenes
         self.vSyncWidget.destroy_signal_id = self.vSyncWidget.connect('destroy', self.on_vsync_destroy, slist_before)
@@ -339,7 +340,7 @@ class Controller:
         if widget.save:
             slist_after = [(sub, int(sub.startTime), int(sub.stopTime)) for sub in subs]
             slist_diff = []
-            for i in xrange(len(subs)):
+            for i in range(len(subs)):
                 if slist_before[i][1] != slist_after[i][1] or slist_before[i][2] != slist_after[i][2]:
                     slist_diff.append((subs[i], int(slist_before[i][1]), int(slist_before[i][2]), int(slist_after[i][1]), int(slist_after[i][2])))
             if len(slist_diff) > 0:
@@ -389,6 +390,15 @@ class Controller:
             self.view.audioViewSize = 1
             self.view['audio-video-container'].set_position(self.view.audioViewSize * self.view.width)
             self.preferences['Video-Detached'] = True
+
+        elif option == 'VCM-ChangeSubFont':
+            dialog = Gtk.FontSelectionDialog('Font Selection', parent = self.view)
+            resp = dialog.run()
+            font = ''
+            if resp == Gtk.ResponseType.OK:
+                font = dialog.get_font_name()
+            dialog.destroy()
+            self.model.video.set_sub_font(font)
 
     def on_video_window_update_size(self, widget, value):
         self.preferences['Video-Size'] = value
@@ -514,15 +524,15 @@ class Controller:
         subs_info = []
         for row in self.model.subtitles.get_model():
             subs_info.append(row[self.model.subtitles.COL_SUB].info)
-        projectData = pickle.load(open(self.model.projectFilename.decode('utf-8'), 'rb'))
+        projectData = pickle.load(open(self.model.projectFilename, 'rb'))
         projectData['subs_info'] = subs_info
         projectData['subs_hash'] = self.model.subtitles.calc_hash()
         projectData['scenes'] = self.model.scenes
-        pickle.dump(projectData, open(self.model.projectFilename.decode('utf-8'), 'wb'))
+        pickle.dump(projectData, open(self.model.projectFilename, 'wb'))
 
     def load_subs_info(self):
         subs_info = []
-        projectData = pickle.load(open(self.model.projectFilename.decode('utf-8'), 'rb'))
+        projectData = pickle.load(open(self.model.projectFilename, 'rb'))
         if 'subs_info' not in projectData or ('subs_info' in projectData and len(projectData['subs_info']) < len(self.model.subtitles.get_model())):
             return
         subs_info = projectData['subs_info']
@@ -545,7 +555,7 @@ class Controller:
     def on_TB_check_clicked(self, widget):
         if self.model.subtitles.is_empty():
             return
-        cSubCheckerDialog(self.view, zip(*self.model.subtitles.get_model())[0]).run()
+        cSubCheckerDialog(self.view, list(zip(*self.model.subtitles.get_model()))[0]).run()
         self.save_subs_info()
 
     def on_audio_active_sub_changed(self, widget, sub):
@@ -635,7 +645,7 @@ class Controller:
     def on_update_audio_duration(self, sender, value):
         self.audioDuration = value
         self.model.video.set_duration(value)
-        self.view['audio'].audioDuration = value / 1000
+        self.view['audio'].audioDuration = value // 1000
         self.view['audio'].queue_draw()
 
     def preferences_clicked(self, sender):
@@ -645,10 +655,10 @@ class Controller:
             self.preferences.set_data(prefs.preferences)
             curVH = self.view['audio'].viewportUpper
             curVL = self.view['audio'].viewportLower
-            midV = curVL + (curVH - curVL) / 2.0
-            diff = 1 / self.preferences['Zoom']
-            self.view['audio'].viewportLower = midV - diff / 2.0
-            self.view['audio'].viewportUpper = midV + diff / 2.0
+            midV = curVL + (curVH - curVL) / 2
+            diff = 1 // self.preferences['Zoom']
+            self.view['audio'].viewportLower = midV - diff / 2
+            self.view['audio'].viewportUpper = midV + diff / 2
             self.preferences.save()
         prefs.destroy()
 
@@ -905,9 +915,9 @@ class Controller:
                 return
             cr = audio.cursor
             if audio.lowms > cr or audio.highms < cr:
-                pointx = int(audio.get_allocation().width / 2)
+                pointx = int(audio.get_allocation().width // 2)
             else:
-                pointx = int(((cr - audio.lowms) / float(audio.highms - audio.lowms)) * audio.get_allocation().width)
+                pointx = int(((cr - audio.lowms) / (audio.highms - audio.lowms)) * audio.get_allocation().width)
             audio.zoom(Gdk.ScrollDirection.UP, pointx)
         elif (event.keyval in [Gdk.KEY_minus, Gdk.KEY_KP_Subtract]) and event.state & Gdk.ModifierType.CONTROL_MASK:
             audio = self.view['audio']
@@ -915,9 +925,9 @@ class Controller:
                 return
             cr = audio.cursor
             if audio.lowms > cr or audio.highms < cr:
-                pointx = int(audio.get_allocation().width / 2)
+                pointx = int(audio.get_allocation().width // 2)
             else:
-                pointx = int(((cr - audio.lowms) / float(audio.highms - audio.lowms)) * audio.get_allocation().width)
+                pointx = int(((cr - audio.lowms) / (audio.highms - audio.lowms)) * audio.get_allocation().width)
             audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
         elif (event.keyval  == Gdk.KEY_Delete):
             self.on_TVCM_Delete(None)
@@ -966,8 +976,8 @@ class Controller:
 
             orig_video = cfile(projectFiles['videoFile'], refpath = refpath).full_path
             tmpstr = self.check_video_file_compatibility( cfile(projectFiles['videoFile'], refpath = refpath).full_path )
-            projectFiles['videoFile'] = tmpstr
-            pickle.dump(projectFiles, open(projectFiles['projectFile'].decode('utf-8'), 'wb'))
+            projectFiles['videoFile'] = cfile(tmpstr, refpath = refpath).relfull
+            pickle.dump(projectFiles, open(projectFiles['projectFile'], 'wb'))
 
             projectFiles['videoFile'] = cfile( projectFiles['videoFile'], refpath = refpath).full_path
             projectFiles['peakFile'] = cfile(projectFiles['peakFile'], refpath = refpath).full_path
@@ -1095,7 +1105,7 @@ class Controller:
         if not cfile(filename).exists or filename == '':
             return
         self.model.voFilename = filename
-        subs = srtFile(self.model.voFilename.decode('utf-8')).read_from_file()
+        subs = srtFile(self.model.voFilename).read_from_file()
         self.model.voReference.set_data(subs)
         self.model.subtitles.load_vo_data(self.model.voReference)
         self.model.voReference.filename = filename
@@ -1115,7 +1125,7 @@ class Controller:
         self.model.projectFilename = filename
         refpath = cfile(filename).abspath
 
-        projectData = pickle.load(open(filename.decode('utf-8'), 'rb'))
+        projectData = pickle.load(open(filename, 'rb'))
         self.model.video.set_video_filename( cfile(projectData['videoFile'], refpath = refpath).full_path )
         self.model.peakFilename = cfile(projectData['peakFile'], refpath = refpath).full_path
         self.model.subFilename = cfile(projectData['subFile'], refpath = refpath).full_path
@@ -1279,7 +1289,7 @@ class Controller:
                 self.view['TVCM-Delete'].show()
             else:
                 consecutive = True
-                for i in xrange(1, len(self.tvSelectionList)):
+                for i in range(1, len(self.tvSelectionList)):
                     if self.model.subtitles.get_prev(self.tvSelectionList[i]) != self.tvSelectionList[i-1]:
                         consecutive = False
                 if consecutive:
@@ -1305,8 +1315,8 @@ class Controller:
 
     def on_sub_edit(self, renderer, row, newText):
         sub = self.model.subtitles.get_sub(row)
-        self.history.add(('edit-text', sub, sub.text, newText.decode('utf-8')))
-        sub.text = newText.decode('utf-8')
+        self.history.add(('edit-text', sub, sub.text, newText))
+        sub.text = newText
         self.check_modified()
 
     def on_time_edit(self, renderer, row, newText, col):
@@ -1396,8 +1406,8 @@ class Controller:
         upper = wg.viewportUpper * 100
         if posValue + abs(upper - lower) > 100:
             return
-        wg.viewportLower =  posValue / 100.0
-        wg.viewportUpper = (posValue + abs(upper - lower)) / 100.0
+        wg.viewportLower =  posValue / 100
+        wg.viewportUpper = (posValue + abs(upper - lower)) / 100
         wg.queue_draw()
 
     def crash_save(self):
@@ -1410,19 +1420,23 @@ class Controller:
             return
         # Save Subtitle
         if self.preferences['Incremental_Backups']:
-            srtFilename = self.model.subFilename.decode('utf-8')
-            tmp = cfile(srtFilename)
-            base = tmp.base
-            ext = tmp.ext
-            for i in xrange(9, 0, -1):
-                if cfile('%s-%s.%s' % (base, str(i+1), ext)).exists:
-                    cfile('%s-%s.%s' % (base, str(i+1), ext)).delete()
-                if cfile('%s-%s.%s' % (base, str(i), ext)).exists:
-                    cfile('%s-%s.%s' % (base, str(i), ext)).rename('%s-%s.%s' % (base, str(i+1), ext))
-            if cfile('%s-1.%s' % (base, ext)).exists:
-                cfile('%s-1.%s' % (base, ext)).delete()
-            if cfile(base + '.' + ext).exists:
-                cfile(base + '.' + ext).rename(base + '-1.' + ext)
+            srtFilename = self.model.subFilename
+            srt = cfile(srtFilename)
+            for i in range(9, 0, -1):
+                bsrt_next = cfile(srt)
+                bsrt = cfile(srt)
+                bsrt_next.change_base(bsrt_next.base + '-%d' % (i + 1))
+                bsrt_next.add_subdir('backup')
+                bsrt.change_base(bsrt.base + '-%d' % i)
+                bsrt.add_subdir('backup')
+                bsrt.create_path()
+                if bsrt.exists:
+                    bsrt.copy(bsrt_next)
+        tmp = cfile(srt)
+        tmp.add_subdir('backup')
+        tmp.change_base(tmp.base + '-1')
+        if srt.exists:
+            srt.copy(tmp)
         srtFile(self.model.subFilename).write_to_file(self.model.subtitles.get_sub_list(), encoding = self.preferences['Encoding'])
         self.save_subs_info()
         self.model.subtitles.clear_changed()
@@ -1435,8 +1449,8 @@ class Controller:
         newHeight = self.view.get_allocation().height
         newWidth = self.view.get_allocation().width
         if self.view.width == newWidth and self.view.height == newHeight:
-            self.view.subtitlesViewSize = 1 - (self.view['root-paned-container'].get_position() / (float(self.view.height - 1)))
-            self.view.audioViewSize = self.view['audio-video-container'].get_position() / float(self.view.width - 1)
+            self.view.subtitlesViewSize = 1 - (self.view['root-paned-container'].get_position() / (self.view.height - 1))
+            self.view.audioViewSize = self.view['audio-video-container'].get_position() / (self.view.width - 1)
         else:
             self.view.width, self.view.height = newWidth, newHeight
             self.view['root-paned-container'].set_position((1 - self.view.subtitlesViewSize) * self.view.height)
@@ -1444,7 +1458,7 @@ class Controller:
             self.resizeEventCounter = 2
         if (hasattr(self, 'init_done') and self.init_done) and (not ('subViewSize' in self.preferences and 'audioViewSize' in self.preferences) or not (self.preferences['subViewSize'] == self.view.subtitlesViewSize and self.preferences['audioViewSize'] == self.view.audioViewSize)):
             self.preferences['subViewSize'] = self.view.subtitlesViewSize
-            if not self.preferences['Video-Detached']:
+            if not ('Video-Detached' in self.preferences.keys()) or not self.preferences['Video-Detached']:
                 self.preferences['audioViewSize'] = self.view.audioViewSize
             self.preferences.save()
 
@@ -1486,7 +1500,7 @@ class Controller:
         self.vSyncWidget.pos = self.view['audio'].pos
 
         # Follow video position in audioview
-        pos = self.vSyncWidget.pos / float(self.vSyncWidget.audioDuration)
+        pos = self.vSyncWidget.pos / self.vSyncWidget.audioDuration
         vup = self.vSyncWidget.viewportUpper
         vlow = self.vSyncWidget.viewportLower
         vdiff = vup - vlow
@@ -1508,7 +1522,7 @@ class Controller:
             self.vSyncWidget.queue_draw()
 
     def on_video_position(self, sender, _position):
-        position = _position / 1000.0
+        position = _position / 1000
         self.view['audio'].pos = int(self.audioDuration * position)
         self.view['position-label'].set_label('Position: %s ' % ms2ts(int( position * self.audioDuration)))
 
@@ -1518,7 +1532,7 @@ class Controller:
         self.model.video.set_subtitle(filter_markup(text))
 
         # Follow video position in audioview
-        pos = self.view['audio'].pos / float(self.view['audio'].audioDuration)
+        pos = self.view['audio'].pos / self.view['audio'].audioDuration
         vup = self.view['audio'].viewportUpper
         vlow = self.view['audio'].viewportLower
         vdiff = vup - vlow

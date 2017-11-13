@@ -22,7 +22,7 @@ class cVOReference(object):
     def get_subs_in_range(self, lowms, highms):
         res = []
         low_idx = bisect_right(self.stop_data, lowms)
-        for i in xrange(low_idx, len(self.start_data)):
+        for i in range(low_idx, len(self.start_data)):
             if self.start_data[i] <= highms:
                 res.append((self.start_data[i], self.stop_data[i], self.text_data[i]))
             else:
@@ -32,7 +32,7 @@ class cVOReference(object):
     def get_indexes_in_range(self, lowms, highms):
         res = []
         low_idx = bisect_right(self.stop_data, lowms)
-        for i in xrange(low_idx, len(self.start_data)):
+        for i in range(low_idx, len(self.start_data)):
             if self.start_data[i] <= highms:
                 res.append(i)
             else:
@@ -45,6 +45,6 @@ class cVOReference(object):
     def save(self):
         if self.filename == '':
             return
-        subList = [subRec(self.start_data[i].msec, self.stop_data[i].msec, self.text_data[i]) for i in xrange(len(self.text_data))]
+        subList = [subRec(self.start_data[i].msec, self.stop_data[i].msec, self.text_data[i]) for i in range(len(self.text_data))]
         f = srtFile(self.filename)
         f.write_to_file(subList)

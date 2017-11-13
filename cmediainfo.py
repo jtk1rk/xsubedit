@@ -4,8 +4,8 @@ import platform
 class cMediaInfo:
     def __init__(self, filename):
         if platform.system() == 'Windows':
-            self.exec_cmd1 = 'mediainfo "%s"' % filename.decode('utf-8').encode('cp1253')
-            self.exec_cmd2 = 'mediainfo --Inform="Audio;%%CodecID%%" "%s"' % filename.decode('utf-8').encode('cp1253')
+            self.exec_cmd1 = 'mediainfo "%s"' % filename#.decode('utf-8').encode('cp1253')
+            self.exec_cmd2 = 'mediainfo --Inform="Audio;%%CodecID%%" "%s"' % filename#.decode('utf-8').encode('cp1253')
         else:
             self.exec_cmd1 = 'mediainfo "%s"' % filename
             self.exec_cmd2 = 'mediainfo --Inform="Audio;%%CodecID%%" "%s"' % filename

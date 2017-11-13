@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from textEditDialog import cTextEditDialog
+from .textEditDialog import cTextEditDialog
 
 class cCellRendererText(Gtk.CellRendererText):
     """ Label entry cell which calls TextEdit_Dialog upon editing """

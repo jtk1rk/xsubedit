@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
-from splitSrtDialog import cSplitSrtDialog
+from .splitSrtDialog import cSplitSrtDialog
 from subfile import srtFile
 from cfile import cfile
 from utils import common_part

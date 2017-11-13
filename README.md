@@ -7,7 +7,7 @@ This is a subtitle editor made for creating/translating subtitles to Greek Langu
 Depedencies
 -----------
 
-The project is written in Python 2.7 using GTK+ 3 for GUI.
+The project is written in Python 3 using GTK+ 3 for GUI.
 It also uses these modules: numpy, appdirs, regex, enchant, GtkSpell, chardet, cairo
 And gstreamer as part of Gtk+ 3.
 (You should install as many gstreamer plugins as you can so you can load as

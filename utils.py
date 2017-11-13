@@ -8,17 +8,18 @@ import time
 import itertools
 from mparser import MarkupParser, Tag
 from mgen import MarkupGenerator
+import functools
 from os import popen
 
 RUN_TIMESTAMP = time.time()
-UTF8_BOM = '\xef\xbb\xbf'
+UTF8_BOM = b'\xef\xbb\xbf'
 
 iround = lambda x: int(round(x))
 
 def common_part(str1, str2):
     res = ''
     minstr = srt1 if len(str1) < len(str2) else str2
-    for i in xrange(len(minstr)):
+    for i in range(len(minstr)):
         if str1[i] != str2[i]:
             break
         res += minstr[i]
@@ -35,9 +36,7 @@ class StretchableList(list):
             if old[0][0] == n:
                 self.append(old[0][1])
             else:
-                self.append( old[0][1] + \
-                             float((n-old[0][0]))/(old[1][0]-old[0][0]) * \
-                             (old[1][1]-old[0][1]) )
+                self.append( old[0][1] + (n-old[0][0]) / (old[1][0]-old[0][0]) * (old[1][1]-old[0][1]) )
         return self
 
 class brList(list):
@@ -48,7 +47,7 @@ class brList(list):
 
 class cPreferences:
     def __init__(self,  filename):
-        self.filename = filename.decode('utf-8')
+        self.filename = filename
         self.data =  {'Encoding': 'Windows-1253', 'Incremental_Backups': True, 'Autosave': True}
 
     def load(self):
@@ -86,7 +85,7 @@ class cPreferences:
                 self.data['MRU'].remove(tmpValue)
             self.data['MRU'] = [value] + self.data['MRU']
             try:
-                self.data['MRU'] = [ item.decode('utf-8') for idx, item in enumerate(self.data['MRU']) if exists(item.decode('utf-8')) and (idx<10) ]
+                self.data['MRU'] = [ item for idx, item in enumerate(self.data['MRU']) if exists(item) and (idx<10) ]
             except:
                 pass
 
@@ -136,7 +135,7 @@ def set_process_name():
         the name of the process. """
     if platform.system() != 'Linux':
         return
-    rndext = ''.join(random.choice(string.ascii_lowercase) for i in xrange(5))
+    rndext = ''.join(random.choice(string.ascii_lowercase) for i in range(5))
     name = 'xSubEdit-' + rndext
     libc = cdll.LoadLibrary('/lib/libc.so.6')
     buff = create_string_buffer(len(name) + 1)
@@ -192,7 +191,7 @@ def do_all(f, iterable):
 def grad(A0, B0, A, B, x):
     if A0 == B0:
         raise ValueError('ValueError: Division By Zero')
-    return ( (A - B) / float(A0 - B0) ) * (x - B0) + B
+    return ( (A - B) / (A0 - B0) ) * (x - B0) + B
 
 def bisect(clist, key, value):
     """ Example: bisect(objectlist, lambda x: x.value, value) """
@@ -207,8 +206,9 @@ def bisect(clist, key, value):
         c = (a+b) // 2
     return b if (key(clist[b]) <= value) else a
 
+@functools.lru_cache(maxsize = 2500)
 def filter_markup(text):
-    m = MarkupParser(text)
+    m = MarkupParser(text.replace('&', '&amp;'))
     keeptags = []
     for tag in m.tags:
         if tag.name.upper() in ['B', 'I']:
@@ -218,6 +218,7 @@ def filter_markup(text):
     g = MarkupGenerator(m.text, keeptags)
     return g.markup
 
+@functools.lru_cache(maxsize = 2500)
 def untagged_text(text):
     try:
         m = MarkupParser(text)
@@ -227,7 +228,7 @@ def untagged_text(text):
 
 def mediaDur(filename):
     if platform.system() == 'Windows':
-        exec_cmd = 'mediainfo --Inform="Video;%%Duration%%" "%s"' % filename.decode('utf-8').encode('cp1253')
+        exec_cmd = 'mediainfo --Inform="Video;%%Duration%%" "%s"' % filename.encode('cp1253')
     else:
         exec_cmd = 'mediainfo --Inform="Video;%%Duration%%" "%s"' % filename
     output = popen(exec_cmd).read().strip()

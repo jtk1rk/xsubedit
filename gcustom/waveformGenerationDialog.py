@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from progressBar import cProgressBar
+from .progressBar import cProgressBar
 from os.path import exists
 from numpy import savez_compressed as savez, array as numarray
 from cffmpeg import cffmpeg
@@ -20,8 +20,8 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.set_transient_for(parent)
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.set_size_request(400, -1)
-        self.videoFile = video_file.decode('utf-8')
-        self.audioFile = audio_file.decode('utf-8')
+        self.videoFile = video_file
+        self.audioFile = audio_file
         self.progressBar = cProgressBar()
         self.add(self.progressBar)
         self.set_resizable(False)
@@ -33,16 +33,16 @@ class cWaveformGenerationDialog(Gtk.Window):
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
 
     def ffmpeg_progress(self, sender, value):
-        self.set_progress(float(value) / 2)
+        self.set_progress(value / 2)
 
     def process_wav(self):
         os.rename(self.audioFile + '.raw', self.audioFile)
         audioSize = os.stat(self.audioFile).st_size
-        audioDuration = iround( (1000.0 * audioSize) / self.audioRate )
-        audioDuration = ceil(audioDuration / 10.0) * 10 # VSS SYNC
+        audioDuration = iround( (1000 * audioSize) / self.audioRate )
+        audioDuration = ceil(audioDuration / 10) * 10 # VSS SYNC
         if audioSize <= 0:
             return
-        samplesPerDataPoint = self.audioRate / 100.0
+        samplesPerDataPoint = self.audioRate / 100
         dataPoints = ceil(audioSize / samplesPerDataPoint)
         samplesPerDataPoint = int(samplesPerDataPoint)
 
@@ -50,9 +50,9 @@ class cWaveformGenerationDialog(Gtk.Window):
 
             hiAudio = []
             lowAudio = []
-            dp_div = iround(dataPoints / 10.0)
+            dp_div = iround(dataPoints / 10)
 
-            for point in xrange(iround(dataPoints)):
+            for point in range(iround(dataPoints)):
                 tmpData = bytearray(f.read(samplesPerDataPoint))
                 if len(tmpData) == 0:
                     break
@@ -61,13 +61,13 @@ class cWaveformGenerationDialog(Gtk.Window):
                 lowAudio.append(-abs(min(tmpData) - 128))
 
                 if point % dp_div == 0:
-                    self.set_progress(0.5 + (point / dataPoints) / 2 )
+                    self.set_progress(0.5 + (point // dataPoints) // 2 )
                     self.process_messages()
 
         maxv = max(hiAudio)
         minv = min(lowAudio)
-        hiAudio = numarray(hiAudio) / float(maxv)
-        lowAudio = numarray(lowAudio) / float(minv)
+        hiAudio = numarray(hiAudio) / maxv
+        lowAudio = numarray(lowAudio) / minv
 
         self.set_progress(1)
         self.process_messages()

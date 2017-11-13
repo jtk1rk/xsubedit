@@ -1,9 +1,7 @@
 from os.path import exists as fileExists, join, split, normpath, splitext, abspath as absolutepath, relpath as relativepath
-from os import stat, remove, rename
+from os import stat, remove, rename, makedirs
 from shutil import copy as copyfile
 import platform
-
-#DIR_DELIMITER = '/' if platform.system() == 'Linux' else '\\'
 
 def get_rel_path(refpath, filename):
     tmpstr = ''
@@ -25,10 +23,10 @@ class cfile:
             self._ext = _file._ext
             self._ref_path = _file._ref_path
         else:
-            self._full_path = _file.decode('utf-8')
+            self._full_path = _file
             self._path, self._filename = split(self._full_path)
             self._base, self._ext = splitext(self._filename)
-            self._ref_path = normpath(refpath.decode('utf-8'))
+            self._ref_path = normpath(refpath)
 
     # Path and name properties
 
@@ -93,10 +91,22 @@ class cfile:
     # Methods
 
     def __eq__(self, other):
-        return self.full_path == othjer.full_path
+        return self.full_path == other.full_path
+
+    def __str__(self):
+        return self.full_path
+
+    def add_subdir(self, subdir):
+        self._path = join(self._path, subdir)
 
     def obj_copy(self):
         return cfile(self._full_path, refpath = self._ref_path)
+
+    def create_path(self):
+        try:
+            makedirs(self._path)
+        except OSError as e:
+            print(e)
 
     def rename(self, newName):
         rename(self.full_path, join(self.path, newName))

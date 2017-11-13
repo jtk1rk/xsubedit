@@ -23,14 +23,14 @@ class cSceneDetect(GObject.GObject, threading.Thread):
         self.active = False
         self.one_pass = one_pass
 
-        if not exists(vidFile.decode('utf-8')):
+        if not exists(vidFile):
             self.file_not_found = True
             return
 
-        vfile = vidFile.decode('utf-8')
+        vfile = vidFile
 
         if not (self.one_pass):
-            recoded_filename = vidFile.decode('utf-8')
+            recoded_filename = vidFile
             fext = recoded_filename[recoded_filename.rfind('.'):]
             recoded_filename = recoded_filename[:recoded_filename.rfind('.')] + '-scenedetect' + fext
             self.exec_cmd1 = 'ffmpeg -y -i "%s" -c:a copy -vf "scale=100:-2" -sws_flags fast_bilinear -sws_dither none -c:v libx264 -preset:v ultrafast "%s"' % (vfile, recoded_filename)
@@ -104,7 +104,7 @@ class cSceneDetect(GObject.GObject, threading.Thread):
         else:
             match = self.re_position.search(line)
             if match:
-                progress = subutils.ts2ms(match.group(0)[5:]) / float(self.duration)
+                progress = subutils.ts2ms(match.group(0)[5:]) / self.duration
                 GObject.idle_add(self.signal_progress, float(progress if progress <= 1 else 1))
 
     def parse_scenepos(self, line):

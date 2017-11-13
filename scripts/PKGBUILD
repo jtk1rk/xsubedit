@@ -8,7 +8,7 @@ pkgdesc="Subtitle editor for xsubs.tv"
 url="http://xsubedit.blogspot.gr"
 arch=('any')
 license=('GPLv3+')
-depends=('binutils' 'wget' 'fakeroot' 'gcc' 'gtkspell' 'python2-cairo' 'git' 'zip' 'python2' 'gst-libav' 'gst-plugins-bad' 'gst-plugins-good' 'gst-plugins-ugly' 'gst-plugins-base' 'gst-plugins-base-libs' 'gstreamer' 'python2-appdirs' 'gtk3' 'python2-gobject' 'python2-regex' 'python2-pyenchant' 'python2-numpy' 'ffmpeg' 'mediainfo' 'python2-chardet' 'hunspell' 'hunspell-el' 'python2-requests' 'python2-beautifulsoup4' 'python2-lxml' 'python2-scipy')
+depends=('binutils' 'wget' 'fakeroot' 'gcc' 'gtkspell' 'python-cairo' 'git' 'zip' 'python' 'gst-libav' 'gst-plugins-bad' 'gst-plugins-good' 'gst-plugins-ugly' 'gst-plugins-base' 'gst-plugins-base-libs' 'gstreamer' 'python-appdirs' 'gtk3' 'python-gobject' 'python-regex' 'python-pyenchant' 'python-numpy' 'ffmpeg' 'mediainfo' 'python-chardet' 'hunspell' 'hunspell-el' 'python-requests' 'python-beautifulsoup4' 'python-lxml' 'python-scipy')
 source=("git+https://github.com/jtk1rk/xsubedit.git")
 md5sums=('SKIP')
 
@@ -20,7 +20,7 @@ build() {
     cp -R sites build
     cd build
     zip -r xSubEdit.zip *
-    echo "#!/usr/bin/env python2" > xsubedit
+    echo "#!/usr/bin/env python" > xsubedit
     cat xSubEdit.zip >> xsubedit
 }
 

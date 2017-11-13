@@ -49,7 +49,7 @@ class cSplitSrtDialog(Gtk.Window):
         self.connect('key-release-event', self.on_key_release)
         self.set_resizable(False)
         self.show_all()
-        self.filename = filename.decode('utf-8')
+        self.filename = filename
         self.subs = subs
         window = self.get_window()
         if window:
@@ -63,7 +63,7 @@ class cSplitSrtDialog(Gtk.Window):
             return
         path, filename = split(self.filename)
         basename, extension = splitext(filename)
-        filenames = [join(path, '%s-part%s%s' % (basename, str(i+1).zfill(2), extension)) for i in xrange(int(pnum))]
+        filenames = [join(path, '%s-part%s%s' % (basename, str(i+1).zfill(2), extension)) for i in range(int(pnum))]
         subs_per_part = ceildiv(len(self.subs), int(pnum))
         for idx, fname in enumerate(filenames):
             partfile = srtFile(fname)

@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from os.path import exists
 from gi.repository import Gtk
-from progressBar import cProgressBar
+from .progressBar import cProgressBar
 from cffmpeg import cffmpeg
 
 class cRecodeDialog(Gtk.Window):
@@ -21,8 +21,8 @@ class cRecodeDialog(Gtk.Window):
         window = self.get_window()
         if window:
             window.set_functions(0)
-        self.new_filename = new_filename.decode('utf-8')
-        self.filename = filename.decode('utf-8')
+        self.new_filename = new_filename
+        self.filename = filename
         self.ffmpeg = cffmpeg(ffmpeg_cmd.replace('SOURCEFILE', self.filename).replace('DESTFILE', self.new_filename))
         self.ffmpeg.connect('progress', self.ffmpeg_progress)
         self.result = False
