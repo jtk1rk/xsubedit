@@ -8,7 +8,7 @@ import time
 import itertools
 from mparser import MarkupParser, Tag
 from mgen import MarkupGenerator
-import functools
+#import functools
 from os import popen
 
 RUN_TIMESTAMP = time.time()
@@ -206,7 +206,7 @@ def bisect(clist, key, value):
         c = (a+b) // 2
     return b if (key(clist[b]) <= value) else a
 
-@functools.lru_cache(maxsize = 2500)
+#@functools.lru_cache(maxsize = 2500)
 def filter_markup(text):
     m = None
     try:
@@ -225,7 +225,7 @@ def filter_markup(text):
     g = MarkupGenerator(m.text, keeptags)
     return g.markup
 
-@functools.lru_cache(maxsize = 2500)
+#@functools.lru_cache(maxsize = 2500)
 def untagged_text(text):
     try:
         m = MarkupParser(text)
