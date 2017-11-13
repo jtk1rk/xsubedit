@@ -38,7 +38,7 @@ rm ~/xsubedit.gen/thesaurus.pz
 
 cd ~/xsubedit.gen
 zip -r xsubedit.zip *
-echo '#!/usr/bin/env python2' > xsubedit
+echo '#!/usr/bin/env python3' > xsubedit
 cat xsubedit.zip >> xsubedit
 chmod +x xsubedit
 
