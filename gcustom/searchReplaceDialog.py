@@ -93,7 +93,7 @@ class cSearchReplaceDialog(Gtk.Window):
     def find_row(self, text, left_idx):
         lidx = -1 if left_idx is None else left_idx
         res = (None, None)
-        search_text = text.decode('utf-8').upper() if not self.caseSensitive.get_active() else text.decode('utf-8')
+        search_text = text.upper() if not self.caseSensitive.get_active() else text
         for iterNum, row in enumerate(self.treeView.get_model()):
             if iterNum <= lidx:
                 continue
@@ -149,7 +149,7 @@ class cSearchReplaceDialog(Gtk.Window):
                 dialog.destroy()
                 if res == 'OK':
                     tmp_txt = self.treeView.get_model()[nextIdx][0].text
-                    new_txt = tmp_txt[:curpos[0]] + self.replaceText.decode('utf-8') + tmp_txt[curpos[1]:]
+                    new_txt = tmp_txt[:curpos[0]] + self.replaceText + tmp_txt[curpos[1]:]
                     sub = self.treeView.get_model()[nextIdx][0]
                     self.hist.add( ('replace-text', sub, tmp_txt, new_txt) )
                     sub.text = new_txt

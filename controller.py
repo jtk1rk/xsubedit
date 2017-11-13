@@ -39,7 +39,6 @@ from cfile import cfile
 import ctypes, platform
 import pickle
 import appdirs
-import sys
 
 def get_parent_button(widget):
     res = widget
@@ -57,8 +56,8 @@ class Controller:
     tvSelectionList = []
 
     def __init__(self, model, view):
-        #self.state = {'model': model, 'view': view} # Here we will save all local class variables
-        #self.preferences should be a class containing "dialog_run" method that shows the dialog
+        # self.state = {'model': model, 'view': view} # Here we will save all local class variables
+        # self.preferences should be a class containing "dialog_run" method that shows the dialog
         self.model = model
         self.view = view
 
@@ -80,7 +79,6 @@ class Controller:
                 raise
 
         # Load Thesaurus
-        path = ''
 
         if cfile('share/thesaurus.pz').exists:
             path = 'share/thesaurus.pz'
@@ -93,7 +91,7 @@ class Controller:
 
         view['subtitles'].thesaurus = cThesaurus(path)
 
-        self.preferences = cPreferences(join(appdirs.user_config_dir('xSubEdit', 'jtapps'),'xSubEdit.conf')) #preferences do not go inside self.state
+        self.preferences = cPreferences(join(appdirs.user_config_dir('xSubEdit', 'jtapps'),'xSubEdit.conf'))
 
         self.cursorLeftMargin = Gdk.Cursor(Gdk.CursorType.LEFT_SIDE)
         self.cursorRightMargin = Gdk.Cursor(Gdk.CursorType.RIGHT_SIDE)
@@ -383,7 +381,7 @@ class Controller:
             if 'Video-Position' in self.preferences:
                 pos = self.preferences['Video-Position']
 
-            videoWindow = cVideoWindow(self.view, win_size = sz, win_position = pos)
+            videoWindow = cVideoWindow(self.view, win_size = sz, win_position = pos, controller = self)
             self.set_video_widget(videoWindow)
             self.view['video'].hide()
             videoWindow.handler_destroy = videoWindow.connect('destroy', self.on_video_window_destroy)
@@ -485,7 +483,7 @@ class Controller:
         self.view['audio'].queue_draw()
 
     def on_audio_tmpSub_update(self, sender):
-        if self.view['audio'].tmpSub != None:
+        if not(self.view['audio'].tmpSub is None):
             duration = int(self.view['audio'].tmpSub.duration)
             self.view['duration-label'].set_label('Duration: '+str(ms2ts(duration))+'\t\t')
 
@@ -505,10 +503,10 @@ class Controller:
         dialog = Gtk.FileChooserDialog('Import SRT', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
         dialog.set_current_folder(cfile(self.model.subFilename).abspath)
         dialog.set_default_response(Gtk.ResponseType.OK)
-        filter = Gtk.FileFilter()
-        filter.set_name('SRT File')
-        filter.add_pattern('*.srt')
-        dialog.add_filter(filter)
+        flt = Gtk.FileFilter()
+        flt.set_name('SRT File')
+        flt.add_pattern('*.srt')
+        dialog.add_filter(flt)
         res = dialog.run()
         filename = ''
 
@@ -535,7 +533,6 @@ class Controller:
         pickle.dump(projectData, open(self.model.projectFilename, 'wb'))
 
     def load_subs_info(self):
-        subs_info = []
         projectData = pickle.load(open(self.model.projectFilename, 'rb'))
         if 'subs_info' not in projectData or ('subs_info' in projectData and len(projectData['subs_info']) < len(self.model.subtitles.get_model())):
             return
@@ -549,12 +546,7 @@ class Controller:
                     sub.info = (key, subs_info[i][key])
                     if key == 'Audio-Last_Edited':
                         self.model.subtitles.last_edited = sub
-                        path = self.model.subtitles.get_sub_path(sub)
-                        if path != None:
-                            with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
-                                self.view['subtitles'].set_cursor(path)
-                                self.view['audio'].activeSub = sub
-                                self.view['audio'].center_active_sub()
+                        self.center_sub(sub)
 
     def on_TB_check_clicked(self, widget):
         if self.model.subtitles.is_empty():
@@ -563,10 +555,10 @@ class Controller:
         self.save_subs_info()
 
     def on_audio_active_sub_changed(self, widget, sub):
-        if sub == None:
+        if sub is None:
             return
         path = self.model.subtitles.get_sub_path(sub)
-        if path == None:
+        if path is None:
             return
         with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
             self.view['subtitles'].set_cursor(path)
@@ -840,9 +832,18 @@ class Controller:
         if event.keyval == Gdk.KEY_Escape:
             self.model.video.pause()
 
+    def center_sub(self, sub):
+        path = self.model.subtitles.get_sub_path(sub)
+        if path is None:
+            return
+        with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
+            self.view['subtitles'].set_cursor(path)
+            self.view['audio'].activeSub = sub
+            self.view['audio'].center_active_sub()
+
     def on_key_release_normal(self, widget, event):
         if event.keyval == Gdk.KEY_F5:
-            if self.view['audio'].activeSub == None:
+            if self.view['audio'].activeSub is None:
                 posts = timeStamp(int(self.view['audio'].cursor))
                 prev = self.model.subtitles.get_sub_before_timeStamp(posts)
             else:
@@ -850,12 +851,12 @@ class Controller:
                     prev = self.model.subtitles.get_prev(self.tvSelectionList[0])
                 else:
                     prev  = self.model.subtitles.get_prev(self.view['audio'].activeSub)
-            if prev == None:
+            if prev is None:
                 return
             self.view['audio'].activeSub = prev
             path = self.model.subtitles.get_sub_path(prev)
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
-            if path != None:
+            if not (path is None):
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
@@ -881,7 +882,7 @@ class Controller:
                 self.model.video.set_segment((self.view['audio'].pos, self.view['audio'].audioDuration))
                 self.model.video.play()
         elif event.keyval == Gdk.KEY_F6:
-            if self.view['audio'].activeSub == None:
+            if self.view['audio'].activeSub is None:
                 posts = timeStamp(int(self.view['audio'].cursor))
                 nexts = self.model.subtitles.get_sub_after_timeStamp(posts)
             else:
@@ -889,12 +890,12 @@ class Controller:
                     nexts = self.model.subtitles.get_next(self.tvSelectionList[-1])
                 else:
                     nexts = self.model.subtitles.get_next(self.view['audio'].activeSub)
-            if nexts == None:
+            if nexts is None:
                 return
             self.view['audio'].activeSub = nexts
             path = self.model.subtitles.get_sub_path(nexts)
             self.model.video.set_videoPosition(self.view['audio'].videoSegment[0])
-            if path != None:
+            if not(path is None):
                 self.view['subtitles'].set_cursor(path)
                 self.model.video.set_segment((int(self.view['audio'].activeSub.startTime), int(self.view['audio'].activeSub.stopTime)))
             self.view['duration-label'].set_label('Duration: '+str(self.view['audio'].activeSub.duration)+'\t\t')
@@ -944,21 +945,15 @@ class Controller:
             else:
                 pointx = int(((cr - audio.lowms) / (audio.highms - audio.lowms)) * audio.get_allocation().width)
             audio.zoom(Gdk.ScrollDirection.DOWN, pointx)
-        elif (event.keyval  == Gdk.KEY_Delete):
+        elif event.keyval  == Gdk.KEY_Delete:
             self.on_TVCM_Delete(None)
-        elif (event.keyval in [Gdk.KEY_G, Gdk.KEY_g]):
+        elif event.keyval in [Gdk.KEY_G, Gdk.KEY_g]:
             for i, row in enumerate(self.model.subtitles.get_model()):
                 sub = row[self.model.subtitles.COL_SUB]
                 for key in sub.info:
                     if key != 'Audio-Last_Edited':
                         continue
-                    path = self.model.subtitles.get_sub_path(sub)
-                    if path is None:
-                        break
-                    with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
-                        self.view['subtitles'].set_cursor(path)
-                        self.view['audio'].activeSub = sub
-                        self.view['audio'].center_active_sub()
+                    self.center_sub(sub)
                     break
 
     def on_key_release(self, widget, event):
@@ -975,10 +970,10 @@ class Controller:
         projectFiles = None
         if res == Gtk.ResponseType.OK:
             projectFiles = dialog.project.copy()
-            if not(dialog.use_vo):
+            if not dialog.use_vo:
                 projectFiles['voFile'] = ''
         dialog.destroy()
-        if projectFiles != None:
+        if not(projectFiles is None):
             refpath = cfile(projectFiles['projectFile']).abspath
             projectFiles['videoFile'] = cfile(projectFiles['videoFile'], refpath = refpath).relfull
             projectFiles['subFile'] = cfile(projectFiles['subFile'], refpath = refpath).relfull
@@ -1170,10 +1165,10 @@ class Controller:
     def on_open_button_clicked(self, widget):
         dialog = Gtk.FileChooserDialog('Open Project', self.view, Gtk.FileChooserAction.OPEN, ('_Cancel', Gtk.ResponseType.CANCEL, '_Open', Gtk.ResponseType.OK))
         dialog.set_default_response(Gtk.ResponseType.OK)
-        filter = Gtk.FileFilter()
-        filter.set_name('Project File')
-        filter.add_pattern('*.prj')
-        dialog.add_filter(filter)
+        flt = Gtk.FileFilter()
+        flt.set_name('Project File')
+        flt.add_pattern('*.prj')
+        dialog.add_filter(flt)
         res = dialog.run()
         filename = ''
 
@@ -1234,6 +1229,26 @@ class Controller:
             self.view['audio'].center_multiple_active_subs(startTime, stopTime)
             self.view['duration-label'].set_label('Duration: '+str(ms2ts(duration))+'\t\t')
 
+    def info_clicked(self, sub):
+        res_button = None
+        dialog = cTextEditDialog(self.view, sub, 'info', self.view['subtitles'].thesaurus)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.history.add(('edit-text', sub, sub.text, dialog.text))
+            if sub.text != dialog.text:
+                sub.info = {}
+            sub.text = dialog.text
+            self.view['audio'].invalidateCanvas()
+            self.view['audio'].queue_draw()
+            res_button = dialog.info_resp_button
+        dialog.destroy()
+        # Change sub info color
+        for key in sub.info:
+            if key.startswith('Audio'):
+                sub.info = (key, (sub.info[key][0].replace('red', 'black').replace('orange', 'black'), []))
+        self.save_subs_info()
+        return res_button
+
     def on_tv_button_press(self, widget, event):
         if event.button == 1 and event.type == Gdk.EventType._2BUTTON_PRESS:
             res = self.view['subtitles'].get_path_at_pos(event.x, event.y)
@@ -1241,21 +1256,14 @@ class Controller:
                 return
             if self.view['subtitles'].get_column(8) == res[1]:
                 sub = self.model.subtitles.get_sub_from_path(res[0])
-                dialog = cTextEditDialog(self.view, sub, 'info', self.view['subtitles'].thesaurus)
-                response = dialog.run()
-                if response == Gtk.ResponseType.OK:
-                    self.history.add(('edit-text', sub, sub.text, dialog.text))
-                    if sub.text != dialog.text:
-                        sub.info = {}
-                    sub.text = dialog.text
-                    self.view['audio'].invalidateCanvas()
-                    self.view['audio'].queue_draw()
-                dialog.destroy()
-                # Change sub info color
-                for key in sub.info:
-                    if key.startswith('Audio'):
-                        sub.info = (key, (sub.info[key][0].replace('red', 'black').replace('orange', 'black'), []))
-                self.save_subs_info()
+                tmp = ''
+                while not (tmp is None) and not(sub is None):
+                    self.center_sub(sub)
+                    tmp = self.info_clicked(sub)
+                    if tmp == 'prev':
+                        sub = self.model.subtitles.get_prev(sub)
+                    if tmp == 'next':
+                        sub = self.model.subtitles.get_next(sub)
 
             if self.view['subtitles'].get_column(4) == res[1]:
                 sub = self.model.subtitles.get_sub_from_path(res[0])
@@ -1264,7 +1272,7 @@ class Controller:
                 if len(voList) > 1:
                     dialog = cSelectionListDialog(self.view, [item[3] for item in voList], title = 'Select VO Line', header_title = 'Lines')
                     dialog.run()
-                    if dialog.result == None:
+                    if dialog.result is None:
                         return
                     editIdx = dialog.result
                     dialog.destroy()
@@ -1353,7 +1361,7 @@ class Controller:
         self.check_modified()
 
     def on_ACM_CreateHere(self, widget):
-        if self.view['audio'].tmpSub != None and self.view['audio'].overSub == self.view['audio'].tmpSub:
+        if not (self.view['audio'].tmpSub is None) and self.view['audio'].overSub == self.view['audio'].tmpSub:
             sub = subRec(int(self.view['audio'].tmpSub.startTime), int(self.view['audio'].tmpSub.stopTime),'')
             self.view['audio'].tmpSub = None
             vo_res = self.model.voReference.get_subs_in_range(int(sub.startTime), (sub.stopTime))
@@ -1363,9 +1371,9 @@ class Controller:
         else:
             mouse_msec = self.view['audio'].get_mouse_msec(self.view['audio'].mouse_last_click_coords[0])
             prevSub = self.model.subtitles.get_sub_before_timeStamp(mouse_msec)
-            prevSub = prevSub if prevSub != None else subRec(0, 0, '')
+            prevSub = prevSub if not(prevSub is None) else subRec(0, 0, '')
             nextSub = self.model.subtitles.get_sub_after_timeStamp(mouse_msec)
-            nextSub = nextSub if nextSub != None else subRec(self.view['audio'].audioDuration, self.view['audio'].audioDuration,'')
+            nextSub = nextSub if not(nextSub is None) else subRec(self.view['audio'].audioDuration, self.view['audio'].audioDuration,'')
             lowLimit = int(mouse_msec if mouse_msec > prevSub.stopTime + 120 else prevSub.stopTime + 120)
             highLimit = int(mouse_msec + 1000 if mouse_msec + 1000 < nextSub.startTime - 120 else nextSub.startTime - 120)
             if highLimit - lowLimit < 1000:
@@ -1571,9 +1579,9 @@ class Controller:
         # Activate subtitles under video position, blocking centering signals
         if not self.model.video.is_playing():
             return
-        if overSub != None:
+        if not(overSub is None):
             path = self.model.subtitles.get_sub_path(overSub)
-            if path != None:
+            if not(path is None):
                 with GObject.signal_handler_block(self.view['subtitles'], self.tv_cursor_changed_id):
                     self.view['subtitles'].set_cursor(path)
 

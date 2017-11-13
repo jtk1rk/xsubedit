@@ -98,6 +98,8 @@ class cTextEditDialog(Gtk.Dialog):
         #self.helper_text_view.set_property('can-focus', False)
         self.text_view_box.add(self.text_view)
         self.text_view_box.add(self.helper_text_view)
+        self.info_resp_button = None
+        self.info_type = info_type
 
         if info_type == 'info':
             color_list = [(sub.info[key][1], sub.info[key][2]) for key in sub.info if key.startswith('Text')]
@@ -135,9 +137,18 @@ class cTextEditDialog(Gtk.Dialog):
         self.spell.attach(self.text_view)
         self.spell.set_language('el_GR')
 
+        if info_type == 'info':
+            button_next = Gtk.Button('>')
+            button_prev = Gtk.Button('<')
+            self.hbox.pack_start(button_prev, False, False, 1)
+            self.hbox.pack_end(button_next, False, False, 1)
+            button_next.connect('clicked', self.on_nav_button, 'next')
+            button_prev.connect('clicked', self.on_nav_button, 'prev')
+
         self.hbox.pack_start(self.char_count, False, False, 0)
         self.hbox.pack_end(self.text_view_box, True, True, 0)
         self.vbox.pack_start(self.hbox,True, True, 0)
+
         self.action_area.pack_start(self.rs_box, False, False, 0)
         self.action_area.reorder_child(self.rs_box, 0)
 
@@ -145,6 +156,7 @@ class cTextEditDialog(Gtk.Dialog):
         self.update_count()
 
         self.vbox.show_all()
+
         self.set_default_response(Gtk.ResponseType.OK)
         self.changed_handler = self.text_view.get_buffer().connect('changed', self.buffer_changed)
         self.text_view.connect("key-release-event", self.key_release)
@@ -162,6 +174,10 @@ class cTextEditDialog(Gtk.Dialog):
         self.text_view.last_mouse_y = 0
         self.spell.on_buffer_changed(self.text_view.get_buffer())
         self.text_view.grab_focus()
+
+    def on_nav_button(self, sender, option):
+        self.info_resp_button = option
+        self.response(Gtk.ResponseType.OK)
 
     def on_tv_button_press(self, sender, event):
         self.text_view.last_mouse_x = event.x
@@ -315,18 +331,18 @@ class cTextEditDialog(Gtk.Dialog):
         buffer = self.text_view.get_buffer()
 
         insertIter = buffer.get_iter_at_mark(buffer.get_insert())
-        if insertIter.backward_search("...", 0, None) != None:
+        if not(insertIter.backward_search("...", 0, None) is None):
             eFindIterStart = insertIter.backward_search("...", 0, None)[0]
             eFindIterStop = insertIter.backward_search("...", 0, None)[1]
             buffer.delete(eFindIterStart, eFindIterStop)
             buffer.insert(buffer.get_iter_at_mark(buffer.get_insert()), "…")
 
         insertIter = buffer.get_iter_at_mark(buffer.get_insert())
-        if insertIter.backward_search('\"', 0, None) != None:
-            qFindIter = insertIter.backward_search('\"', 0, None)[1] if insertIter.backward_search('\"', 0, None) != None else None
+        if not(insertIter.backward_search('\"', 0, None) is None):
+            qFindIter = insertIter.backward_search('\"', 0, None)[1] if not(insertIter.backward_search('\"', 0, None) is None) else None
             qFindIterPrev = insertIter.backward_search('\"', 0, None)[0]
-            qOpen = qFindIter.backward_search('«', 0, None)[1].get_offset() if qFindIter.backward_search('«', 0, None) != None else -1
-            qClose = qFindIter.backward_search('»', 0, None)[1].get_offset() if qFindIter.backward_search('»', 0, None) != None else -1
+            qOpen = qFindIter.backward_search('«', 0, None)[1].get_offset() if not(qFindIter.backward_search('«', 0, None) is None) else -1
+            qClose = qFindIter.backward_search('»', 0, None)[1].get_offset() if not(qFindIter.backward_search('»', 0, None) is None) else -1
             if (qOpen == -1 and qClose == -1) or (qOpen < qClose):
                 buffer.delete(qFindIterPrev, qFindIter)
                 buffer.insert(qFindIter, '«')
@@ -344,12 +360,12 @@ class cTextEditDialog(Gtk.Dialog):
             else:
                 insertIter = buffer.get_iter_at_mark(buffer.get_insert())
                 itStartIter = insertIter.backward_search("<i>", 0, None)
-                if itStartIter != None:
+                if not(itStartIter is None):
                     itStopIter = itStartIter[1].forward_search("</i>", 0, None)
                 else:
                     itStopIter = None
-                isOpen = itStartIter != None and (itStopIter == None)
-                if itStartIter == None:
+                isOpen = not (itStartIter is None) and (itStopIter is None)
+                if itStartIter is None:
                     buffer.insert(insertIter, "<i>")
                 elif isOpen:
                     buffer.insert(insertIter, "</i>")
@@ -367,12 +383,12 @@ class cTextEditDialog(Gtk.Dialog):
             else:
                 insertIter = buffer.get_iter_at_mark(buffer.get_insert())
                 itStartIter = insertIter.backward_search("<b>", 0, None)
-                if itStartIter != None:
+                if not(itStartIter is None):
                     itStopIter = itStartIter[1].forward_search("</b>", 0, None)
                 else:
                     itStopIter = None
-                isOpen = itStartIter != None and (itStopIter == None)
-                if itStartIter == None:
+                isOpen = not(itStartIter is None) and (itStopIter is None)
+                if itStartIter is None:
                     buffer.insert(insertIter, "<b>")
                 elif isOpen:
                     buffer.insert(insertIter, "</b>")
@@ -383,6 +399,14 @@ class cTextEditDialog(Gtk.Dialog):
         if  event.keyval == Gdk.KEY_Return and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.response(Gtk.ResponseType.OK)
             return True
+
+        if event.keyval in [Gdk.KEY_Left, Gdk.KEY_period] and event.state & Gdk.ModifierType.CONTROL_MASK and self.info_type == 'info':
+            self.info_resp_button = 'prev'
+            self.response(Gtk.ResponseType.OK)
+
+        if event.keyval in [Gdk.KEY_Right, Gdk.KEY_comma] and event.state & Gdk.ModifierType.CONTROL_MASK and self.info_type == 'info':
+            self.info_resp_button = 'next'
+            self.response(Gtk.ResponseType.OK)
 
         if  event.keyval in [Gdk.KEY_Z, Gdk.KEY_z, 2022, 1990] and event.state & Gdk.ModifierType.CONTROL_MASK:
             with GObject.signal_handler_block(self.text_view.get_buffer(), self.changed_handler):

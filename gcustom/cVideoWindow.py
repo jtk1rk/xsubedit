@@ -37,7 +37,7 @@ class cVideoWindow(Gtk.Window):
                      'update-size' : (GObject.SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (GObject.TYPE_PYOBJECT,)) # (int, int)
                      }
 
-    def __init__(self, parent, win_size = None, win_position = None):
+    def __init__(self, parent, win_size = None, win_position = None, controller = None):
         super(cVideoWindow, self).__init__()
         self.parent = parent
         self.set_transient_for(parent)
@@ -50,6 +50,9 @@ class cVideoWindow(Gtk.Window):
         if not ( win_position is None ):
             self.move(*win_position)
 
+        self.controller = controller
+        self.locked = False
+
         self.mouse = cMouseHandler()
 
         self.DrawingArea = Gtk.DrawingArea()
@@ -57,18 +60,21 @@ class cVideoWindow(Gtk.Window):
         EventBox.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
         EventBox.add(self.DrawingArea)
         self.add(EventBox)
-        self.VCM = Gtk.Menu()
-        VCM_Close = Gtk.MenuItem('Close')
-        self.VCM_Lock = Gtk.CheckMenuItem('Lock')
-        self.VCM.add(self.VCM_Lock)
-        self.VCM.add(VCM_Close)
-        self.VCM.show_all()
+
+        self.VCM = parent['VideoContextMenu']
+
         self.override_background_color(0, Gdk.RGBA(0,0,0,1))
 
         EventBox.connect('button-release-event', self.on_drawingarea_button_release)
         EventBox.connect('button-press-event', self.on_drawingarea_button_press)
         EventBox.connect('motion-notify-event', self.on_motion_notify)
-        VCM_Close.connect('activate', self.on_close_window)
+
+        parent['VCM-Lock'].show()
+        parent['VCM-Close'].show()
+        parent['VCM-Detach'].hide()
+
+        parent['VCM-Close'].connect('activate', self.on_close_window)
+        parent['VCM-Lock'].connect('toggled', self.lock_toggled)
 
         self.show_all()
         self.cursorBottomMargin = Gdk.Cursor(Gdk.CursorType.BOTTOM_SIDE)
@@ -78,6 +84,9 @@ class cVideoWindow(Gtk.Window):
         self.resizing = False
         self.moving = False
         self.close_request = False
+
+    def lock_toggled(self, sender):
+        self.locked = sender.get_active()
 
     def update_cursor(self, current_cursor, new_cursor):
         if new_cursor != current_cursor:
@@ -92,7 +101,7 @@ class cVideoWindow(Gtk.Window):
         self.resize(new_width, new_height)
 
     def on_motion_notify(self, sender, event):
-        if self.VCM_Lock.get_active():
+        if self.locked:
             return
         self.mouse.update_event('motion', event)
         at_right_margin = event.x > self.get_allocation().width - 5
@@ -155,5 +164,8 @@ class cVideoWindow(Gtk.Window):
             self.VCM.popup(None, None, None, None, event.button, event.time)
 
     def on_close_window(self, sender):
+        self.parent['VCM-Lock'].hide()
+        self.parent['VCM-Close'].hide()
+        self.parent['VCM-Detach'].show()
         self.close_request = True
         self.destroy()

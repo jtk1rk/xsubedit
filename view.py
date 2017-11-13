@@ -208,6 +208,8 @@ class View(Gtk.Window):
         self.widgets['VCM-ChangeSubFont'] = Gtk.MenuItem('Change Subtitle Font')
         self.widgets['VCM-Separator1'] = Gtk.SeparatorMenuItem()
         self.widgets['VCM-Separator2'] = Gtk.SeparatorMenuItem()
+        self.widgets['VCM-Lock'] = Gtk.CheckMenuItem('Lock')
+        self.widgets['VCM-Close'] = Gtk.MenuItem('Close')
 
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-SceneDetect'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-StopDetection'])
@@ -216,6 +218,8 @@ class View(Gtk.Window):
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-ChangeSubFont'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-Separator2'])
         self.widgets['VideoContextMenu'].add(self.widgets['VCM-Detach'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Lock'])
+        self.widgets['VideoContextMenu'].add(self.widgets['VCM-Close'])
 
         self.widgets['VCM-SceneDetect'].show()
         self.widgets['VCM-StopDetection'].hide()
@@ -224,6 +228,8 @@ class View(Gtk.Window):
         self.widgets['VCM-ChangeSubFont'].show()
         self.widgets['VCM-Separator2'].show()
         self.widgets['VCM-Detach'].show()
+        self.widgets['VCM-Lock'].hide()
+        self.widgets['VCM-Close'].hide()
 
         # Containers
         self.widgets['root-paned-container'] = Gtk.Paned(orientation = Gtk.Orientation.VERTICAL)
