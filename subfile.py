@@ -1,5 +1,4 @@
 from subtitles import subRec
-from utils import UTF8_BOM
 import chardet
 import re
 

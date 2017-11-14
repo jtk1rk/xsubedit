@@ -12,7 +12,6 @@ from mgen import MarkupGenerator
 from os import popen
 
 RUN_TIMESTAMP = time.time()
-UTF8_BOM = b'\xef\xbb\xbf'
 
 iround = lambda x: int(round(x))
 
