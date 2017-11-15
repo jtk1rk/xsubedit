@@ -3,6 +3,7 @@
 import os
 import os.path
 import hashlib
+from cfile import cfile
 
 def keywords_in_str(kw_lst, string):
     if any([i in string for i in kw_lst]):
@@ -28,16 +29,18 @@ def generate_file_md5(filename, blocksize=2**20):
             m.update( buf )
     return m.hexdigest()
 
-def gen_filelist():
+def gen_filelist(write_file = True):
     exclude_dirs = ['.git', '__pycache__', 'scripts']
-    try:
+
+    if cfile('filelist.txt').exists:
         os.remove('filelist.txt')
-    except IOError:
-        pass
 
     res = []
     for filename in get_file_list(exclude_dirs):
         res.append(filename + '|' + generate_file_md5(filename))
+
+    if not write_file:
+        return res
 
     with open('filelist.txt', 'w') as f:
         for line in res:
