@@ -45,10 +45,10 @@ def main():
             dl.append((BASE_URL+'/'+key[1:], key))
 
     for idx, item in enumerate(dl):
-        print ('Downloading: %s (%.2f)' % (split(item[1])[1], idx+1 / len(dl) ) ,)
-        #f = cfile(item[1])
-        #if not f.path_exists:
-        #    f.create_path()
-        #get_file(item[0], item[1])
+        print ('Downloading: %s (%.2f)' % (split(item[1])[1], (idx+1) / len(dl) ) ,)
+        f = cfile(item[1])
+        if not f.path_exists:
+            f.create_path()
+        get_file(item[0], item[1])
 
 main()
