@@ -18,12 +18,14 @@ class srtFile:
 
     def write_to_file(self, subs, encoding = 'Windows-1253'):
         f = open(self.fileName, "w", encoding = encoding, errors = 'ignore')
+        lines = []
         for i in enumerate(subs):
-            f.write(str(i[0]+1) + '\r\n')
-            lines = str(i[1]).splitlines()
-            for line in lines:
-                f.write(line + '\r\n')
-            f.write('\r\n')
+            lines.append((str(i[0]+1).strip() + '\r\n'))
+            sublines = str(i[1]).splitlines()
+            for line in sublines:
+                lines.append(line.strip() + '\r\n')
+            lines.append('\r\n')
+        f.writelines(lines)
         f.close()
 
     def read_from_file(self):

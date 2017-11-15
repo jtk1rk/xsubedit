@@ -1,7 +1,7 @@
 import random
 
-markup_escape = lambda text: text.replace('<', '&lt;').replace('>', '&gt;')
-markup_unescape = lambda text: text.replace('&lt;', '<').replace('&gt;', '>')
+markup_escape = lambda text: text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+markup_unescape = lambda text: text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
 
 class MarkupTag(object):
     def __init__(self,  text,  pos):
@@ -12,7 +12,7 @@ class MarkupTag(object):
         self.text += char
 
     def is_complete(self):
-        return self.text[-1] == '>'
+        return self.text[-1] == '>' if self.text[0] == '<' else self.text[-1] == ';'
 
     @property
     def text(self):
@@ -82,8 +82,8 @@ class MarkupTagList(object):
     def get_list(self):
         return self.tag_list
 
-    def new_tag(self,  pos):
-        self.tag_list.append(MarkupTag('<', pos))
+    def new_tag(self,  pos, tag_char):
+        self.tag_list.append(MarkupTag(tag_char, pos))
 
 class Tag(object):
     def __init__(self, tag_name, start, stop, attributes):
@@ -155,26 +155,31 @@ class MarkupParser:
         while len(text) > 0:
             last_tag = markup_list.last if markup_list.last else None
 
-            if text[0] == '<':
+            if text[0] in ['<', '&']:
                 if not last_tag or last_tag.is_complete():
-                    markup_list.new_tag(char_pos)
+                    markup_list.new_tag(char_pos, text[0])
                 else:
-                    raise ValueError('Malformed markup')
+                    raise ValueError('Malformed markup: Should not open new tag if last is not closed')
 
             elif text[0] == '>':
                 if last_tag and not last_tag.is_complete():
                     last_tag.append('>')
                 else:
-                    raise ValueError('Malformed markup')
+                    raise ValueError('Malformed markup: Should not close a non open tag')
 
             else:
-                if last_tag and not last_tag.is_complete():
+                if last_tag and not last_tag.is_complete() and text[0] == ';' and last_tag.text[0] == '&':
+                    last_tag.append(';')
+                elif last_tag and not last_tag.is_complete():
                     last_tag.append(text[0])
                 else:
                     char_pos += 1
                     res_text += text[0]
 
             text = text[1:]
+
+        if 'last_tag' in locals() and not last_tag is None and not last_tag.is_complete():
+            raise ValueError('Malformed markup: Last tag incomplete')
 
         # process tags
         self.__text = res_text

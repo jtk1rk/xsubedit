@@ -6,7 +6,7 @@ import pickle
 import platform
 import time
 import itertools
-from mparser import MarkupParser, Tag
+from mparser import MarkupParser, Tag, markup_escape
 from mgen import MarkupGenerator
 #import functools
 from os import popen
@@ -208,13 +208,15 @@ def bisect(clist, key, value):
 #@functools.lru_cache(maxsize = 2500)
 def filter_markup(text):
     m = None
+    print(text)
     try:
         tmp = MarkupParser(text)
         m = tmp
     except:
         pass
     if m is None:
-        m = MarkupParser(text.replace('&', '&amp;').replace('>','&gt;').replace('<', '&lt;'))
+        m = markup_escape(text)
+        m = MarkupParser(m)
     keeptags = []
     for tag in m.tags:
         if tag.name.upper() in ['B', 'I']:
