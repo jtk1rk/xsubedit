@@ -1,4 +1,4 @@
-./win_updater.py|53e86054f1224974e0ff86c86f41a9f1
+./win_updater.py|6d36ae195ad8b50f74022f2ab360c3fd
 ./voreference.py|f4fb61a8ea187c28112b39c31a5bee59
 ./history.py|fbaec287966389e0cbad520c3662290a
 ./LICENSE|7702f203b58979ebbc31bfaeb44f219c

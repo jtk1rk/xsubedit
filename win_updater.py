@@ -43,7 +43,8 @@ def main():
     for key in remote_dict:
         if not (key in local_dict) or local_dict[key] != remote_dict[key]:
             #print ((BASE_URL+'/'+ key[1:] if platform.system() != 'Windows' else key[1:].replace('\\','/'), key))
-            dl.append((BASE_URL+'/'+key[1:] if platform.system() != 'Windows' else key[1:].replace('\\','/'), key))
+            tmp = key[1:] if platform.system() != 'Windows' else key[1:].replace('\\','/')
+            dl.append((BASE_URL + '/' + tmp, key))
 
     for idx, item in enumerate(dl):
         print(item[1])
