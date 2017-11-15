@@ -30,7 +30,7 @@ def generate_file_md5(filename, blocksize=2**20):
     return m.hexdigest()
 
 def gen_filelist(write_file = True):
-    exclude_dirs = ['.git', '__pycache__', 'scripts']
+    exclude_dirs = ['.git', '__pycache__', 'scripts', 'python-3.4.4']
 
     if cfile('filelist.txt').exists:
         os.remove('filelist.txt')
