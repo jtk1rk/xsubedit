@@ -21,19 +21,16 @@ def read_filelist(filename):
 
 def main():
     local_list = gen_filelist(write_file = False)
-    print(BASE_URL+'/filelist.txt')
     remote_list = read_remote_file(BASE_URL+'/filelist.txt')
 
     local_dict = {}
     remote_dict = {}
     for line in remote_list:
-        print(line)
         filename, md5 = line.split('|')
         filename = filename.strip()
         md5 = md5.strip()
         remote_dict[filename] = md5
     for line in local_list:
-        print(line)
         filename, md5 = line.split('|')
         filename = filename.strip()
         md5 = md5.strip()
