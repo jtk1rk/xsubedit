@@ -1,4 +1,4 @@
-import subprocess, locale
+import subprocess
 
 class cffmpeginfo(object):
     def __init__(self, cmd, string_match):
@@ -8,7 +8,7 @@ class cffmpeginfo(object):
         self.result = []
 
     def run(self):
-        pipe = subprocess.Popen(self.exec_cmd.encode(locale.getpreferredencoding()), shell = True, stdout=subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True)
+        pipe = subprocess.Popen(self.exec_cmd, shell = True, stdout=subprocess.PIPE, stderr = subprocess.STDOUT, universal_newlines = True)
         line = ""
         while not (line == "" and pipe.poll() != None) :
             line = pipe.stdout.readline().strip()

@@ -1452,7 +1452,8 @@ class Controller:
                 bsrt_next.add_subdir('backup')
                 bsrt.change_base(bsrt.base + '-%d' % i)
                 bsrt.add_subdir('backup')
-                bsrt.create_path()
+                if not bsrt.path_exists:
+                    bsrt.create_path()
                 if bsrt.exists:
                     bsrt.copy(bsrt_next)
         tmp = cfile(srt)

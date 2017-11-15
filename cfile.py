@@ -1,4 +1,4 @@
-from os.path import exists as fileExists, join, split, normpath, splitext, abspath as absolutepath, relpath as relativepath
+from os.path import exists as fileExists, join, split, normpath, splitext, abspath as absolutepath, relpath as relativepath, isdir
 from os import stat, remove, rename, makedirs
 from shutil import copy as copyfile
 import platform
@@ -79,6 +79,10 @@ class cfile:
         if self.filename == '':
             return False
         return fileExists(self.full_path)
+
+    @property
+    def path_exists(self):
+        return isdir(self.abspath)
 
     @property
     def size(self):

@@ -40,7 +40,7 @@ class Model(GObject.GObject):
         dataFile = load(f)
         hiAudio = dataFile['arr_0']
         lowAudio = dataFile['arr_1']
-        self.audioDuration = int(dataFile['arr_2'][0] * 1000)
+        self.audioDuration = int(dataFile['arr_2'][0]) * 1000
         f.close()
         self.audio = Audio(hiAudio, lowAudio)
         self.ready = True

@@ -4,6 +4,7 @@ import urllib.request
 import os
 from os.path import split
 from filelist_generator import gen_filelist
+from cfile import cfile
 
 BASE_URL = 'http://dropboxuser.com/dlgsdjk/'
 
@@ -17,10 +18,14 @@ def read_filelist(filename):
 def main():
     gen_filelist()
     os.remove('remote-filelist.txt')
-    get_file(BASE_URL+'/filelist.txt', 'remote-filelist.txt')
 
-    local_list = read_filelist('filelist.txt')
-    remote_list = read_filelist('remote-filelist.txt')
+    try:
+        get_file(BASE_URL+'/filelist.txt', 'remote-filelist.txt')
+        local_list = read_filelist('filelist.txt')
+        remote_list = read_filelist('remote-filelist.txt')
+    except:
+        exit()
+
     local_dict = {}
     remote_dict = {}
     for line in remote_list:
@@ -41,6 +46,9 @@ def main():
 
     for idx, item in enumerate(dl):
         print ('Downloading: %s (%.2f)' % (split(item[1])[1], idx / len(dl) ) ,)
+        f = cfile(item[1])
+        if not f.path_exists:
+            f.create_path()
         get_file(item[0], item[1])
 
 main()
