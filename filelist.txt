@@ -1,4 +1,4 @@
-./win_updater.py|b946f1f26658d75e2abbb13db49b2d6f
+./win_updater.py|3ffcc1987d112a115c7d362324f815de
 ./voreference.py|f4fb61a8ea187c28112b39c31a5bee59
 ./history.py|fbaec287966389e0cbad520c3662290a
 ./LICENSE|7702f203b58979ebbc31bfaeb44f219c
@@ -6,12 +6,13 @@
 ./model.py|5420d9a31920a827c4c7ba912e222cf6
 ./controller.py|b4a0bb7f3adfc6f7e438f217c476ef0d
 ./.gitignore|0943d30d127b029a42c2017aba0abbd9
+./mparser_old.py|4c67ca94897b2f7d273bd445121a0bb8
 ./cmediainfo.py|aea7b746970710b8d4cae14378d4f485
 ./mgen.py|c6b77a5fb61e5b6bec0c05d9e45c4a20
 ./subutils.py|144a602cbe8e1f07a06217ca27989216
 ./README.md|d547bee85177e51bb5c96bfb87694161
 ./setup-win.py|5026c07c5d80b75af3c62278e1de3e75
-./utils.py|cc7bb6ccd668c82ac4445e0d8fa45691
+./utils.py|0583b1d52cadf7a48a381d3b4b922270
 ./test.py|d41d8cd98f00b204e9800998ecf8427e
 ./subtitles.py|7ca0f9a8c9e2d6d9c4fad2b7899e9455
 ./thesaurus.py|5f4ecc60c71c9782a898d3587fa1c416
@@ -22,9 +23,9 @@
 ./tagtext.py|dbe3fcf0df409809d36c056b794ee235
 ./view.py|06477fffa3049be22095f04e39523e83
 ./audio.py|3de55a6706c3ffd8bc26c64070ed53ce
-./subfile.py|671374e9267b90673555b64f1fc68fe8
+./subfile.py|747538fc9fe5904ff32b1cce13685995
 ./cfile.py|428747d7baf5e5d50fad3a99d584b3a5
-./mparser.py|d7b5497de5fcd3394ec100d15589827f
+./mparser.py|55f00aa441615be55c66fca460d2731b
 ./cffmpeg.py|0918cc0b133684512af2404771b2bae6
 ./filelist_generator.py|ddeea5f678379cf2e2847e3275578543
 ./__main__.py|4964384e26f945646bf68017cafb7d57
