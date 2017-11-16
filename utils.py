@@ -11,10 +11,16 @@ from mgen import MarkupGenerator
 #import functools
 from os import popen
 import hashlib
+import random
 
 RUN_TIMESTAMP = time.time()
 
 iround = lambda x: int(round(x))
+
+def random_string(length):
+    s = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(random.sample(s,length))
+
 
 def generate_file_md5(filename, blocksize=2**20):
     m = hashlib.md5()

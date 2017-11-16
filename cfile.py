@@ -2,7 +2,17 @@ from os.path import exists as fileExists, join, split, normpath, splitext, abspa
 from os import stat, remove, rename, makedirs
 from shutil import copy as copyfile
 import platform
-from utils import generate_file_md5
+import hashlib
+
+def generate_file_md5(filename, blocksize=2**20):
+    m = hashlib.md5()
+    with open( filename , "rb" ) as f:
+        while True:
+            buf = f.read(blocksize)
+            if not buf:
+                break
+            m.update( buf )
+    return m.hexdigest()
 
 def get_rel_path(refpath, filename):
     tmpstr = ''

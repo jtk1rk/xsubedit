@@ -2,8 +2,8 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from utils import isint
-from os.path import split, splitext, join
 from subfile import srtFile
+from cfile import cfile
 
 def ceildiv(a, b):
     return -(-a // b)
@@ -61,12 +61,15 @@ class cSplitSrtDialog(Gtk.Window):
         if not isint(pnum):
             self.close()
             return
-        path, filename = split(self.filename)
-        basename, extension = splitext(filename)
-        filenames = [join(path, '%s-part%s%s' % (basename, str(i+1).zfill(2), extension)) for i in range(int(pnum))]
+        files = [cfile(self.filename) for i in range(int(pnum))]
+        for i, f in enumerate(files):
+            f.change_base(f.base + ' - part ' + str(i+1).zfill(2))
+            f.add_subdir('split')
+        if not(files[0].path_exists):
+            files[0].create_path()
         subs_per_part = ceildiv(len(self.subs), int(pnum))
-        for idx, fname in enumerate(filenames):
-            partfile = srtFile(fname)
+        for idx, f in enumerate(files):
+            partfile = srtFile(f.full_path)
             partfile.write_to_file(self.subs[(idx) * subs_per_part : (idx + 1) * subs_per_part])
         self.close()
 

@@ -42,16 +42,24 @@ def main():
     dl = []
     for key in remote_dict:
         if not (key in local_dict) or local_dict[key] != remote_dict[key]:
-            #print ((BASE_URL+'/'+ key[1:] if platform.system() != 'Windows' else key[1:].replace('\\','/'), key))
             tmp = key[1:] if platform.system() != 'Windows' else key[1:].replace('\\','/')
             dl.append((BASE_URL + '/' + tmp, key))
 
+    failed = []
+
     for idx, item in enumerate(dl):
-        print(item[1])
         print ('Downloading: %s (%.2f)' % (split(item[1])[1], (idx+1) / len(dl) ) ,)
         f = cfile(item[1])
         if not f.path_exists:
             f.create_path()
-        get_file(item[0], item[1])
+        try:
+            get_file(item[0], item[1])
+        except:
+            failed.append(item[1])
+
+    if len(failed) > 0:
+        print('Some files did not update:')
+        for filename in failed:
+            print (filename)
 
 main()

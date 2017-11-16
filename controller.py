@@ -33,7 +33,7 @@ from os import makedirs, errno
 from os.path import join
 
 from history import cHistory
-from utils import cPreferences, do_all, filter_markup
+from utils import cPreferences, do_all, filter_markup, random_string
 from scenedetect import cSceneDetect
 from cfile import cfile
 import ctypes, platform
@@ -1441,9 +1441,25 @@ class Controller:
     def on_save_button_clicked(self, widget):
         if self.model.subFilename == "":
             return
+        srtFilename = self.model.subFilename
+
+        # check if we are saving the same content
+        # - if srtFilename doesn't exists then continue with save
+        if cfile(srtFilename).exists:
+            # we are temporarily save the srt, if this temp srt is the same with
+            # current srt then we leave save function
+            tmpsrt = cfile(srtFilename)
+            tmpsrt.change_base(random_string(15))
+            while tmpsrt.exists:
+                tmpsrt.change_base(random_string(15))
+            srtFile(tmpsrt.full_path).write_to_file(self.model.subtitles.get_sub_list(), encoding = self.preferences['Encoding'])
+            if tmpsrt.md5 == cfile(srtFilename).md5:
+                tmpsrt.delete()
+                return
+            tmpsrt.delete()
+
         # Save Subtitle
         if self.preferences['Incremental_Backups']:
-            srtFilename = self.model.subFilename
             srt = cfile(srtFilename)
             for i in range(9, 0, -1):
                 bsrt_next = cfile(srt)
