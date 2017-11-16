@@ -12,7 +12,7 @@
 ./subutils.py|144a602cbe8e1f07a06217ca27989216
 ./README.md|d547bee85177e51bb5c96bfb87694161
 ./setup-win.py|5026c07c5d80b75af3c62278e1de3e75
-./utils.py|0583b1d52cadf7a48a381d3b4b922270
+./utils.py|be83744743adfa9f13392f50a38ce347
 ./test.py|d41d8cd98f00b204e9800998ecf8427e
 ./subtitles.py|7ca0f9a8c9e2d6d9c4fad2b7899e9455
 ./thesaurus.py|5f4ecc60c71c9782a898d3587fa1c416
@@ -23,7 +23,7 @@
 ./tagtext.py|dbe3fcf0df409809d36c056b794ee235
 ./view.py|06477fffa3049be22095f04e39523e83
 ./audio.py|3de55a6706c3ffd8bc26c64070ed53ce
-./subfile.py|747538fc9fe5904ff32b1cce13685995
+./subfile.py|367dcca74f682be0a1dbce8e5fc939bc
 ./cfile.py|428747d7baf5e5d50fad3a99d584b3a5
 ./mparser.py|55f00aa441615be55c66fca460d2731b
 ./cffmpeg.py|0918cc0b133684512af2404771b2bae6

@@ -17,15 +17,13 @@ class srtFile:
             return encoding['encoding'] if encoding['encoding'] != 'ISO-8859-7' else 'Windows-1253'
 
     def write_to_file(self, subs, encoding = 'Windows-1253'):
-        f = open(self.fileName, "w", encoding = encoding, errors = 'ignore')
-        lines = []
+        f = open(self.fileName, "w", encoding = encoding, errors = 'ignore', newline='\n')
         for i in enumerate(subs):
-            lines.append((str(i[0]+1).strip() + '\r\n'))
+            f.write(str(i[0]+1).strip() + '\r\n')
             sublines = str(i[1]).splitlines()
             for line in sublines:
-                lines.append(line.strip() + '\r\n')
-            lines.append('\r\n')
-        f.writelines(lines)
+                f.write(line.strip() + '\r\n')
+            f.write('\r\n')
         f.close()
 
     def read_from_file(self):

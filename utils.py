@@ -208,7 +208,6 @@ def bisect(clist, key, value):
 #@functools.lru_cache(maxsize = 2500)
 def filter_markup(text):
     m = None
-    print(text)
     try:
         tmp = MarkupParser(text)
         m = tmp
