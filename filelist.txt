@@ -12,8 +12,8 @@
 ./subutils.py|144a602cbe8e1f07a06217ca27989216
 ./README.md|d547bee85177e51bb5c96bfb87694161
 ./setup-win.py|5026c07c5d80b75af3c62278e1de3e75
-./utils.py|be83744743adfa9f13392f50a38ce347
-./test.py|d41d8cd98f00b204e9800998ecf8427e
+./utils.py|9e9083bc3322b2f514fdcf8b81e938ea
+./test.py|2ec55d8347cc92653f55cfda34948096
 ./subtitles.py|7ca0f9a8c9e2d6d9c4fad2b7899e9455
 ./thesaurus.py|5f4ecc60c71c9782a898d3587fa1c416
 ./autoSyncTools.py|f164dbdf8b80742d26d7fcdbb1352704
@@ -24,10 +24,10 @@
 ./view.py|06477fffa3049be22095f04e39523e83
 ./audio.py|3de55a6706c3ffd8bc26c64070ed53ce
 ./subfile.py|367dcca74f682be0a1dbce8e5fc939bc
-./cfile.py|428747d7baf5e5d50fad3a99d584b3a5
+./cfile.py|e6f34a9c3c265df936a32ad378afca6b
 ./mparser.py|55f00aa441615be55c66fca460d2731b
 ./cffmpeg.py|0918cc0b133684512af2404771b2bae6
-./filelist_generator.py|19971f4d0eacec32dcf7f714d15ccf26
+./filelist_generator.py|d17a7ad75bbcf903ba033abe686545a5
 ./__main__.py|4964384e26f945646bf68017cafb7d57
 ./gcustom/rawGenerationDialog.py|3a4be2e32a1f1ed67f865ee8690527c2
 ./gcustom/__init__.py|df4697b9472e60508b091c83df7f595e

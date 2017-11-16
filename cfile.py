@@ -2,6 +2,7 @@ from os.path import exists as fileExists, join, split, normpath, splitext, abspa
 from os import stat, remove, rename, makedirs
 from shutil import copy as copyfile
 import platform
+from utils import generate_file_md5
 
 def get_rel_path(refpath, filename):
     tmpstr = ''
@@ -48,7 +49,7 @@ class cfile:
     def filename(self):
         if self.base == '':
             return ''
-        return '%s.%s' % (self.base, self.ext)
+        return '.'.join([self.base, self.ext]) if self.ext != '' else self.base
 
     @property
     def full_path(self):
@@ -91,6 +92,10 @@ class cfile:
     @property
     def isEmpty(self):
         return self.size == 0
+
+    @property
+    def md5(self):
+        return generate_file_md5(self.full_path)
 
     # Methods
 

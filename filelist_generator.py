@@ -2,7 +2,7 @@
 
 import os
 import os.path
-import hashlib
+from utils import generate_file_md5
 from cfile import cfile
 
 def keywords_in_str(kw_lst, string):
@@ -19,16 +19,6 @@ def get_file_list(exclude_dirs = []):
             res.append(os.path.join(dirpath, filename))
     return res
 
-def generate_file_md5(filename, blocksize=2**20):
-    m = hashlib.md5()
-    with open( filename , "rb" ) as f:
-        while True:
-            buf = f.read(blocksize)
-            if not buf:
-                break
-            m.update( buf )
-    return m.hexdigest()
-
 def gen_filelist(write_file = True):
     exclude_dirs = ['.git', '__pycache__', 'scripts', 'python-3.4.4']
 
@@ -37,7 +27,7 @@ def gen_filelist(write_file = True):
 
     res = []
     for filename in get_file_list(exclude_dirs):
-        res.append(filename + '|' + generate_file_md5(filename))
+        res.append(filename + '|' + cfile(filename).md5)
 
     if not write_file:
         return res

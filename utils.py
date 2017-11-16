@@ -10,10 +10,21 @@ from mparser import MarkupParser, Tag, markup_escape
 from mgen import MarkupGenerator
 #import functools
 from os import popen
+import hashlib
 
 RUN_TIMESTAMP = time.time()
 
 iround = lambda x: int(round(x))
+
+def generate_file_md5(filename, blocksize=2**20):
+    m = hashlib.md5()
+    with open( filename , "rb" ) as f:
+        while True:
+            buf = f.read(blocksize)
+            if not buf:
+                break
+            m.update( buf )
+    return m.hexdigest()
 
 def common_part(str1, str2):
     res = ''
